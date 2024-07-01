@@ -1028,7 +1028,8 @@ void shClose(int fd) { if (close(fd)) fatal("bad file descriptor close"); }
 // #define shDbg(...) printf(__VA_ARGS__); fflush(stdout)
 #define shDbg(...)
 
-static i32 sh_core(bool raw, B x, usz xia, B inObj, u64 iLen, B* s_outp, B* s_errp) {
+static i32 sh_core(bool raw, B x, usz xia, B inObj, u64 iLen, B* s_outp, B* s_errp, bool nopipes) { // [c4augustus]
+  
   // allocate args
   TALLOC(char*, argv, xia+1);
   SGetU(x)
@@ -1055,9 +1056,11 @@ static i32 sh_core(bool raw, B x, usz xia, B inObj, u64 iLen, B* s_outp, B* s_er
   
   posix_spawn_file_actions_t a; posix_spawn_file_actions_init(&a);
   // bind the other ends of pipes to the ones in the new process, and close the originals afterwards
-  posix_spawn_file_actions_adddup2(&a, p_in [0],  STDIN_FILENO); posix_spawn_file_actions_addclose(&a, p_in [0]); posix_spawn_file_actions_addclose(&a, p_in [1]);
-  posix_spawn_file_actions_adddup2(&a, p_out[1], STDOUT_FILENO); posix_spawn_file_actions_addclose(&a, p_out[0]); posix_spawn_file_actions_addclose(&a, p_out[1]);
-  posix_spawn_file_actions_adddup2(&a, p_err[1], STDERR_FILENO); posix_spawn_file_actions_addclose(&a, p_err[0]); posix_spawn_file_actions_addclose(&a, p_err[1]);
+  if (!nopipes) { // [c4augustus]
+    posix_spawn_file_actions_adddup2(&a, p_in [0],  STDIN_FILENO); posix_spawn_file_actions_addclose(&a, p_in [0]); posix_spawn_file_actions_addclose(&a, p_in [1]);
+    posix_spawn_file_actions_adddup2(&a, p_out[1], STDOUT_FILENO); posix_spawn_file_actions_addclose(&a, p_out[0]); posix_spawn_file_actions_addclose(&a, p_out[1]);
+    posix_spawn_file_actions_adddup2(&a, p_err[1], STDERR_FILENO); posix_spawn_file_actions_addclose(&a, p_err[0]); posix_spawn_file_actions_addclose(&a, p_err[1]);
+  }
   
   // spawn the actual process
   pid_t pid;
@@ -1152,7 +1155,7 @@ static i32 sh_core(bool raw, B x, usz xia, B inObj, u64 iLen, B* s_outp, B* s_er
 #include "../windows/winError.c"
 #include "../windows/sh.c"
 
-static i32 sh_core(bool raw, B x, usz xia, B inObj, u64 iLen, B* s_outp, B* s_errp) {
+static i32 sh_core(bool raw, B x, usz xia, B inObj, u64 iLen, B* s_outp, B* s_errp, bool nopipes) { // [c4augustus]
   // allocate args
   u64 arglen = 0;
   SGetU(x)
@@ -1225,12 +1228,15 @@ static i32 sh_core(bool raw, B x, usz xia, B inObj, u64 iLen, B* s_outp, B* s_er
     // parse options
     B inObj = bi_N;
     bool raw = false;
+    bool nopipes = false; // [c4augustus]
     if (!q_N(w)) {
       if (!isNsp(w)) thrM("•SH: 𝕨 must be a namespace");
       inObj = ns_getC(w, "stdin");
       if (!q_N(inObj) && !isArr(inObj)) thrM("•SH: Invalid stdin value");
       B rawObj = ns_getC(w, "raw");
       if (!q_N(rawObj)) raw = o2b(rawObj);
+      B rawObjNop = ns_getC(w, "nopipes"); // [c4augustus]
+      if (!q_N(rawObjNop)) raw = o2b(rawObjNop); // [c4augustus]
     }
     u64 iLen = q_N(inObj)? 0 : (raw? IA(inObj) : utf8lenB(inObj));
     
@@ -1239,7 +1245,7 @@ static i32 sh_core(bool raw, B x, usz xia, B inObj, u64 iLen, B* s_outp, B* s_er
     if (xia==0) thrM("•SH: 𝕩 must have at least one item");
     
     B s_out, s_err;
-    i32 code = sh_core(raw, x, xia, inObj, iLen, &s_out, &s_err);
+    i32 code = sh_core(raw, x, xia, inObj, iLen, &s_out, &s_err, nopipes); // [c4augustus]
     
     dec(w); dec(x);
     B s_outObj; B s_outRaw = toC8Any(s_out);
