@@ -1027,12 +1027,15 @@ B sh_c2(B t, B w, B x) {
   // parse options
   B inObj = bi_N;
   bool raw = false;
+  bool nopipes = false; // [c4augustus]
   if (!q_N(w)) {
     if (!isNsp(w)) thrM("•SH: 𝕨 must be a namespace");
     inObj = ns_getC(w, "stdin");
     if (!q_N(inObj) && !isArr(inObj)) thrM("•SH: Invalid stdin value");
     B rawObj = ns_getC(w, "raw");
     if (!q_N(rawObj)) raw = o2b(rawObj);
+    B rawObjNop = ns_getC(w, "nopipes"); // [c4augustus]
+    if (!q_N(rawObjNop)) nopipes = o2b(rawObjNop); // [c4augustus]
   }
   u64 iLen = q_N(inObj)? 0 : (raw? IA(inObj) : utf8lenB(inObj));
   
@@ -1065,9 +1068,11 @@ B sh_c2(B t, B w, B x) {
   
   posix_spawn_file_actions_t a; posix_spawn_file_actions_init(&a);
   // bind the other ends of pipes to the ones in the new process, and close the originals afterwards
-  posix_spawn_file_actions_adddup2(&a, p_in [0],  STDIN_FILENO); posix_spawn_file_actions_addclose(&a, p_in [0]); posix_spawn_file_actions_addclose(&a, p_in [1]);
-  posix_spawn_file_actions_adddup2(&a, p_out[1], STDOUT_FILENO); posix_spawn_file_actions_addclose(&a, p_out[0]); posix_spawn_file_actions_addclose(&a, p_out[1]);
-  posix_spawn_file_actions_adddup2(&a, p_err[1], STDERR_FILENO); posix_spawn_file_actions_addclose(&a, p_err[0]); posix_spawn_file_actions_addclose(&a, p_err[1]);
+  if (!nopipes) { // [c4augustus]
+    posix_spawn_file_actions_adddup2(&a, p_in [0],  STDIN_FILENO); posix_spawn_file_actions_addclose(&a, p_in [0]); posix_spawn_file_actions_addclose(&a, p_in [1]);
+    posix_spawn_file_actions_adddup2(&a, p_out[1], STDOUT_FILENO); posix_spawn_file_actions_addclose(&a, p_out[0]); posix_spawn_file_actions_addclose(&a, p_out[1]);
+    posix_spawn_file_actions_adddup2(&a, p_err[1], STDERR_FILENO); posix_spawn_file_actions_addclose(&a, p_err[0]); posix_spawn_file_actions_addclose(&a, p_err[1]);
+  }
   
   // spawn the actual process
   pid_t pid;
