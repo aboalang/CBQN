@@ -1099,11 +1099,11 @@ B couple_c2(B t, B w, B x) {
 }
 
 
-static inline void shift_check(B w, B x) {
+static inline void shift_check(B w, B x, u32 chr) {
   ur wr = RNK(w); usz* wsh = SH(w);
   ur xr = RNK(x); usz* xsh = SH(x);
-  if (wr+1!=xr & wr!=xr) thrF("shift: =𝕨 must be =𝕩 or ¯1+=𝕩 (%i≡=𝕨, %i≡=𝕩)", wr, xr);
-  for (i32 i = 1; i < xr; i++) if (wsh[i+wr-xr] != xsh[i]) thrF("shift: Lengths not matchable (%H ≡ ≢𝕨, %H ≡ ≢𝕩)", w, x);
+  if (wr+1!=xr & wr!=xr) thrF("𝕨%c𝕩: =𝕨 must be =𝕩 or ¯1+=𝕩 (%i≡=𝕨, %i≡=𝕩)", chr, wr, xr);
+  for (i32 i = 1; i < xr; i++) if (wsh[i+wr-xr] != xsh[i]) thrF("𝕨%c𝕩: Lengths not matchable (%H ≡ ≢𝕨, %H ≡ ≢𝕩)", chr, w, x);
 }
 
 B shiftb_c1(B t, B x) {
@@ -1124,7 +1124,7 @@ B shiftb_c1(B t, B x) {
 B shiftb_c2(B t, B w, B x) {
   if (isAtm(x) || RNK(x)==0) thrM("𝕨»𝕩: 𝕩 cannot be a scalar");
   if (isAtm(w)) w = m_unit(w);
-  shift_check(w, x);
+  shift_check(w, x, U'»');
   B f = fill_both(w, x);
   usz wia = IA(w);
   usz xia = IA(x);
@@ -1154,7 +1154,7 @@ B shifta_c1(B t, B x) {
 B shifta_c2(B t, B w, B x) {
   if (isAtm(x) || RNK(x)==0) thrM("𝕨«𝕩: 𝕩 cannot be a scalar");
   if (isAtm(w)) w = m_unit(w);
-  shift_check(w, x);
+  shift_check(w, x, U'«');
   B f = fill_both(w, x);
   usz wia = IA(w);
   usz xia = IA(x);

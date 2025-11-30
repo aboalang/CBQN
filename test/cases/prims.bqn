@@ -356,12 +356,12 @@ a←↕2 ⋄ ! "e" ≡ (↕10){b←a‿a‿a‿a‿a‿a‿a‿a‿a‿a ⋄ �
 %USE eqvar ⋄ 1‿2‿3‿4‿5‿64 {c𝕊e: ∾_eqvar´¨ ⟨4‿c, c⟩ ⋈⌜○({𝕩⥊<e}¨) ⟨0‿c, 1‿c, c⟩}⌜ ⟨1, 'a', 1‿2⟩
 
 # « & »
-!"shift: Lengths not matchable (⟨2⟩ ≡ ≢𝕨, 3‿3 ≡ ≢𝕩)" % 1‿2»↕3‿3
-!"shift: =𝕨 must be =𝕩 or ¯1+=𝕩 (0≡=𝕨, 3≡=𝕩)" % 1»↕2‿2‿2
-!"shift: =𝕨 must be =𝕩 or ¯1+=𝕩 (2≡=𝕨, 1≡=𝕩)" % (↕2‿2)»1‿2
-!"shift: Lengths not matchable (⟨2⟩ ≡ ≢𝕨, 3‿3 ≡ ≢𝕩)" % 1‿2«↕3‿3
-!"shift: =𝕨 must be =𝕩 or ¯1+=𝕩 (0≡=𝕨, 3≡=𝕩)" % 1«↕2‿2‿2
-!"shift: =𝕨 must be =𝕩 or ¯1+=𝕩 (2≡=𝕨, 1≡=𝕩)" % (↕2‿2)«1‿2
+!"𝕨»𝕩: Lengths not matchable (⟨2⟩ ≡ ≢𝕨, 3‿3 ≡ ≢𝕩)" % 1‿2»↕3‿3
+!"𝕨»𝕩: =𝕨 must be =𝕩 or ¯1+=𝕩 (0≡=𝕨, 3≡=𝕩)" % 1»↕2‿2‿2
+!"𝕨»𝕩: =𝕨 must be =𝕩 or ¯1+=𝕩 (2≡=𝕨, 1≡=𝕩)" % (↕2‿2)»1‿2
+!"𝕨«𝕩: Lengths not matchable (⟨2⟩ ≡ ≢𝕨, 3‿3 ≡ ≢𝕩)" % 1‿2«↕3‿3
+!"𝕨«𝕩: =𝕨 must be =𝕩 or ¯1+=𝕩 (0≡=𝕨, 3≡=𝕩)" % 1«↕2‿2‿2
+!"𝕨«𝕩: =𝕨 must be =𝕩 or ¯1+=𝕩 (2≡=𝕨, 1≡=𝕩)" % (↕2‿2)«1‿2
 !"«𝕩: 𝕩 cannot be a scalar" % «0
 !"»𝕩: 𝕩 cannot be a scalar" % »<0
 
