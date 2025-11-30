@@ -3,6 +3,8 @@
 #include "../utils/talloc.h"
 #include "../builtins.h"
 
+static u8 el_orFill(u8 el) { return el; } // currently arrays always fit their fill element
+
 // TODO clear sortedness flags on customizeShape & cpyWithShape
 Arr* customizeShape(B x) {
   if (reusable(x) && RNK(x)<=1) return a(x);
@@ -723,7 +725,7 @@ B take_c2(B t, B w, B x) {
     usz xia = IA(x);
     if (n>xia) {
       B xf = getFillE(x, "𝕨↑𝕩: Fill element of 𝕩 needed for overtaking");
-      MAKE_MUT_INIT(r, n, el_or(TI(x,elType), selfElType(xf))); MUTG_INIT(r);
+      MAKE_MUT_INIT(r, n, el_orFill(TI(x,elType))); MUTG_INIT(r);
       mut_fillG(r, 0, xf, n-xia);
       mut_copyG(r, n-xia, x, 0, xia);
       decG(x);
@@ -1114,7 +1116,7 @@ B shiftb_c1(B t, B x) {
     Arr* r = arr_shCopy(reshape_one(ia, xf), x);
     decG(x); return taga(r);
   }
-  MAKE_MUT_INIT(r, ia, el_or(TI(x,elType), selfElType(xf))); MUTG_INIT(r);
+  MAKE_MUT_INIT(r, ia, el_orFill(TI(x,elType))); MUTG_INIT(r);
   mut_copyG(r, csz, x, 0, ia-csz);
   mut_fillG(r, 0, xf, csz);
   return qWithFill(mut_fcd(r, x), xf);
@@ -1144,7 +1146,7 @@ B shifta_c1(B t, B x) {
     Arr* r = arr_shCopy(reshape_one(ia, xf), x);
     decG(x); return taga(r);
   }
-  MAKE_MUT_INIT(r, ia, el_or(TI(x,elType), selfElType(xf))); MUTG_INIT(r);
+  MAKE_MUT_INIT(r, ia, el_orFill(TI(x,elType))); MUTG_INIT(r);
   mut_copyG(r, 0, x, csz, ia-csz);
   mut_fillG(r, ia-csz, xf, csz);
   return qWithFill(mut_fcd(r, x), xf);
