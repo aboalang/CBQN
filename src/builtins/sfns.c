@@ -117,7 +117,7 @@ static Arr* take_impl(usz ria, B x, char* msg) { // consumes x; returns v↑⥊�
   usz xia = IA(x);
   if (ria>xia) {
     B xf = getFillE(x, msg);
-    MAKE_MUT_INIT(r, ria, el_or(TI(x,elType), selfElType(xf))); MUTG_INIT(r);
+    MAKE_MUT_INIT(r, ria, el_orFill(TI(x,elType))); MUTG_INIT(r);
     mut_copyG(r, 0, x, 0, xia);
     mut_fillG(r, xia, xf, ria-xia);
     decG(x);
