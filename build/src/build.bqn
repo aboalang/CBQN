@@ -348,7 +348,7 @@ po ← { # parsed options
   
   ffi ⇐ ((¬windows)∧¬wasm) DOpt "FFI"
   
-  exportSymbols ← ffi∨lib
+  exportSymbols ← ffi∨lib∨wasm
   
   defLibs ← @≡GetOpt "LD_LIBS"
   GetLibs ← { 𝕊:
@@ -447,7 +447,7 @@ po ← { # parsed options
         args∾↩ GetOpt "lf"
         args∾↩ allFlags
         args∾↩ GetOpt "LDFLAGS"
-        args∾↩ (           emcc) / ⟨"-s", "EXPORTED_FUNCTIONS=_main,_cbqn_runLine,_cbqn_evalSrc", "-s", "EXPORTED_RUNTIME_METHODS=ccall,cwrap", "-s", "ALLOW_MEMORY_GROWTH=1"⟩
+        args∾↩ (           emcc) / ⟨"-sEXPORTED_FUNCTIONS=_main,_cbqn_runLine,_cbqn_evalSrc,_malloc,_free", "-sEXPORTED_RUNTIME_METHODS=ccall,cwrap,HEAPU8", "-s", "ALLOW_MEMORY_GROWTH=1"⟩
         args∾↩ (           wasi) / ⟨"-lwasi-emulated-mman", "--target=wasm32-wasi", "-Wl,-z,stack-size=8388608", "-Wl,--initial-memory=67108864"⟩
         args∾↩ (sharedLib∧ wasi) / ⟨"-mexec-model=reactor", "-Wl,--export-dynamic", "-Wl,--export=malloc", "-Wl,--export=free"⟩
         args∾↩ (sharedLib∧¬wasi) / ⟨"-shared"⟩

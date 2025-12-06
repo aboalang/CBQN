@@ -11,6 +11,9 @@
 #if CBQN_EXPORT
   #if defined(_WIN32) || defined(_WIN64)
     #define BQN_EXP __attribute__((__visibility__("default"))) __declspec(dllexport)
+  #elif __EMSCRIPTEN__
+    #include <emscripten.h>
+    #define BQN_EXP __attribute__((used))
   #else
     #define BQN_EXP __attribute__((__visibility__("default")))
   #endif
