@@ -898,7 +898,10 @@ B slash_im(B t, B x) {
   retry:
   switch(xe) { default: UD;
     case el_bit: {
-      usz sum = bit_sum(bitany_ptr(x), xia);
+      u64* xp = bitany_ptr(x);
+      usz sum = !FL_HAS(x,fl_dsc|fl_asc)?  bit_sum(xp, xia)
+              :  FL_HAS(x,fl_dsc)? bit_boundary_dn(xp, xia)
+                           : xia - bit_boundary_up(xp, xia);
       usz ria = 1 + (sum>0);
       f64* rp; r = m_f64arrv(&rp, ria);
       rp[sum>0] = sum; rp[0] = xia - sum;

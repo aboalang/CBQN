@@ -118,4 +118,6 @@ B m_cai32(usz ia, i32* a);
 B m_caf64(usz sz, f64* a);
 
 i64 bit_sum(u64* x, u64 am);
+u64 bit_boundary_up(u64* x, u64 n); // first 0 assuming sorted-up (grade.h)
+u64 bit_boundary_dn(u64* x, u64 n); // first 1 assuming sorted-down
 u64 usum(B x); // doesn't consume; error if not natural numbers or overflow

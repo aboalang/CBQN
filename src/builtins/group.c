@@ -6,6 +6,7 @@
 // SHOULD squeeze 𝕨
 // All statistics computed in the initial pass that finds ⌈´𝕨
 // If 𝕨 is boolean, compute from 𝕨¬⊸/𝕩 and 𝕨/𝕩
+//   Boolean 𝕨 with any sort flag: binary search, take+drop
 // COULD handle small-range 𝕨 with equals-replicate
 // If 𝕨 is sorted up (flag or ∧´1↓»⊸<𝕨), count with Singeli and make slices
 // If +´»⊸≠𝕨 is small, process in chunks as a separate case
@@ -39,6 +40,7 @@ extern B slash_c1(B, B);
 extern B slash_c2(B, B, B);
 extern B select_c2(B, B, B);
 extern B take_c2(B, B, B);
+extern B drop_c2(B, B, B);
 
 static Arr* arr_shChangeLen(Arr* a, ur r, usz* xsh, usz len) {
   assert(r > 1);
@@ -106,7 +108,15 @@ static B group_simple(B w, B x, ur xr, usz wia, usz xn, usz* xsh, u8 we) {
   switch (we) { default:UD;
     CASE(i8) CASE(i16) CASE(i32)
     // Boolean w is special-cased before we would check sort or change
-    case el_bit: ria = xn? 1+bit_has(wp0,xn,1) : wia? bitp_get(wp0,0) : 0; break;
+    case el_bit:
+      if (xn==0) ria = wia? bitp_get(wp0,0) : 0;
+      else {
+        sort = FL_HAS(w,fl_dsc|fl_asc); // add dsc since it's easy to handle
+        ria = sort? bitp_get(wp0, FL_HAS(w,fl_dsc)? 0 : xn-1)
+                  : bit_has(wp0,xn,1);
+        ria++;
+      }
+      break;
   }
   #undef CASE
   #undef ACCUM
@@ -131,9 +141,18 @@ static B group_simple(B w, B x, ur xr, usz wia, usz xn, usz* xsh, u8 we) {
   }
   if (we==el_bit) {
     assert(ria == 2);
-    if (wia>xn) w = C2(take, m_f64(xn), w);
-    rp[1] = C2(slash, incG(w), incG(x));
-    rp[0] = C2(slash, bit_negate(w), x);
+    if (sort) {
+      bool dn = FL_HAS(w,fl_dsc);
+      u64 l = (dn? bit_boundary_dn : bit_boundary_up)(wp0, xn);
+      decG(w);
+      rp[0] = C2(take, m_f64(l), incG(x));
+      rp[1] = C2(drop, m_f64(l), x);
+      if (RARE(dn)) { B t=rp[0]; rp[0]=rp[1]; rp[1]=t; }
+    } else {
+      if (wia>xn) w = C2(take, m_f64(xn), w);
+      rp[1] = C2(slash, incG(w), incG(x));
+      rp[0] = C2(slash, bit_negate(w), x);
+    }
     return taga(r);
   }
   // Needed to make sure wia>0 for ip[wia-1] below
@@ -174,14 +193,8 @@ static B group_simple(B w, B x, ur xr, usz wia, usz xn, usz* xsh, u8 we) {
     if (xr == 1) {
       GROUP_SLICES(l, arr_shVec(c))
     } else {
-      assert(xr>=2);
       usz csz = arr_csz(x);
-      usz* csh = xsh+1;
-      GROUP_SLICES(l*csz,
-        usz* sh = arr_shAlloc(c, xr);
-        *(sh++) = l;
-        shcpy(sh, csh, xr-1);
-      )
+      GROUP_SLICES(l*csz, arr_shChangeLen(c,xr,xsh,l))
     }
     #undef GROUP_SLICES
     incByG(z,-(i64)nx); incByG(x,-(i64)(ria-nx));

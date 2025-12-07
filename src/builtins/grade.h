@@ -400,7 +400,7 @@ bool CAT(isSorted,GRADE_UD(Up,Down))(B x) {
 }
 
 // Location of first 1 (ascending) or 0 (descending), by binary search
-static u64 CAT(bit_boundary,GRADE_UD(up,dn))(u64* x, u64 n) {
+u64 CAT(bit_boundary,GRADE_UD(up,dn))(u64* x, u64 n) {
   u64 c = GRADE_UD(,~)(u64)0;
   u64 *s = x-1;
   for (usz l = BIT_N(n)+1, h; (h=l/2)>0; l-=h) {
