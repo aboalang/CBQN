@@ -54,7 +54,6 @@ static NOINLINE void* BN(allocateMore)(ux bucket, u8 type, ux from, ux to) {
         return r;
       }
       BN(allocMore_rec) = false;
-      gc_wantTopLevelGC = true;
     #endif
     thrOOM();
   }

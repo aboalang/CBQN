@@ -179,7 +179,7 @@ static void gcv2_unmark_visit(Value* x) {
   }
 #endif
 
-GLOBAL u64 gc_lastAlloc;
+GLOBAL u64 gc_lastGCUsed[2]; // 0: any; 1: top-level
 GLOBAL bool gc_running;
 void gc_forceGC(bool toplevel) {
   #if ENABLE_GC
@@ -207,17 +207,17 @@ void gc_forceGC(bool toplevel) {
       #endif
       fprintf(stderr, "; took %.3fms\n", (nsTime()-startTime)/1e6);
     }
-    gc_lastAlloc = endSize;
+    gc_lastGCUsed[0] = endSize;
+    gc_lastGCUsed[toplevel] = endSize;
+    
     gc_running = 0;
   #endif
 }
 
-STATIC_GLOBAL bool gc_wantTopLevelGC;
 NOINLINE bool gc_maybeGC(bool toplevel) {
   if (gc_depth) return false;
   u64 used = tot_heapUsed();
-  if (used > gc_lastAlloc*2 || (toplevel && gc_wantTopLevelGC)) {
-    if (toplevel) gc_wantTopLevelGC = false;
+  if (used > gc_lastGCUsed[toplevel]*2) {
     gc_forceGC(toplevel);
     return true;
   }
