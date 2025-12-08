@@ -221,7 +221,7 @@ static B group_simple(B w, B x, ur xr, usz wia, usz xn, usz* xsh, u8 we) {
   }
   
   // Few changes in 𝕨: move in chunks
-  if (xn>64 && notB && change<(xn*width)/32) {
+  if (xn>64 && notB && change<(xn*(width?width:1))/32) {
     u64* mp; B m = m_bitarrv(&mp, xn);
     u8* wp0 = tyany_ptr(w);
     we = TI(w,elType);
@@ -253,7 +253,7 @@ static B group_simple(B w, B x, ur xr, usz wia, usz xn, usz* xsh, u8 we) {
       }
     if (csz==0) {
       allocBitGroups(rp, ria, z, xr, xsh, len, width);
-    } if (!bits) {
+    } else if (!bits) {
       allocGroups(rp, ria, z, xt, xr, xsh, len, width, csz);
       GROUP_CHUNKED(MEM_CPY)
     } else {
