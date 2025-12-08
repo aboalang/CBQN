@@ -49,7 +49,7 @@ opts ← ⟨
   ⟨1, "static-lib", 0, "Build a static library"⟩
   ⟨1, "static-bin", 0, "Statically link the executable"⟩
   ⟨1, "wasi",   0, "Build with WASI; default output name is BQN.wasm"⟩
-  ⟨1, "emcc",   0, "Build with emscripten; outputs two files - BQN.wasm and BQN.js"⟩
+  ⟨1, "emcc",   0, "Build with emscripten; OUTPUT should be a folder"⟩
   ⟨1, "clangd", 0, "Generate a compile_commands.json for clangd"∾@+10⟩
   
   ⟨1, "FFI",       @, "Enable FFI through libffi; off by default for Windows"⟩
@@ -361,6 +361,7 @@ po ← { # parsed options
   }
   
   ccColor ⇐ ((¬clangd) ∧ tui DOpt "color") / ⟨ccClang⊑"-fdiagnostics-color=always"‿"-fcolor-diagnostics"⟩
+  debuginfo ← debug DOpt "g"
   
   cbqnc ← {
     args ← ⟨
@@ -390,7 +391,7 @@ po ← { # parsed options
     args∾↩ (            wasi) / ⟨"-DWASI", "-DNO_MMAP", "-DUSE_SETJMP=0", "-D_WASI_EMULATED_MMAN", "--target=wasm32-wasi"⟩
     args∾↩ (            emcc) / ⟨"-DEMCC", "-O3"⟩
     args∾↩ (          replxx) / ⟨"-DUSE_REPLXX", "-DREPLXX_STATIC=1", "-I"∾replxxDir∾"/include"⟩ # TODO maybe move to main.c only, and have it be in its own separate cache dir, so that adding replxx doesn't recompile everything?
-    args∾↩ (  debug DOpt "g") / ⟨"-g"⟩
+    args∾↩ (       debuginfo) / ⟨"-g"⟩
     args∾↩ (              o3) / ⟨"-O3"⟩
     args∾↩ (           debug) / ⟨"-DDEBUG"⟩
     args∾↩ (        rtverify) / ⟨"-DRT_VERIFY"⟩
@@ -457,6 +458,7 @@ po ← { # parsed options
         args∾↩ (pie∧ ¬sharedLib) / ⟨"-fPIE", "-pie"⟩
         args∾↩ (        windows) / ⟨"-lpthread"⟩
         args∾↩ (      staticBin) / ⟨"-static"⟩
+        args∾↩ ( debuginfo∧emcc) / ⟨"-gsource-map"⟩
         args ↩ args (¬∘∊/⊣) GetOpt "rm_lf"
         Cmd ↩ {srcs‿dst: ⟨bin, "-o", dst⟩∾srcs∾args}
     }
@@ -851,10 +853,15 @@ outPath ← •wdpath •file.At po.output
   success ← Run cachedBin
   { 𝕊:
     po.emcc?
-      SH ⟨"cp", AtRoot cachedBin,                   outPath •file.At •file.Name cachedBin⟩
-      SH ⟨"cp", AtRoot linkerCache.File "BQN.wasm", outPath •file.At "BQN.wasm"⟩
+      Cp ← {
+        src ← AtRoot linkerCache.File 𝕩
+        SH⍟(•file.Exists src) ⟨"cp", "--", src, outPath •file.At 𝕩⟩
+      }
+      Cp "BQN.js"
+      Cp "BQN.wasm"
+      Cp "BQN.wasm.map"
     ;
-      SH ⟨"cp", "-f", AtRoot cachedBin, outPath⟩
+      SH ⟨"cp", "-f", "--", AtRoot cachedBin, outPath⟩
   }⍟⊢ success ∧ ¬po.dry
   OnExit@
   •Exit ¬success
