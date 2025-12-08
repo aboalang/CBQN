@@ -1,4 +1,5 @@
 #include "gc.h"
+#include "../utils/toplevel.h"
 
 #if ENABLE_GC
   static void mm_freeFreedAndMerge(void);
@@ -183,6 +184,9 @@ GLOBAL u64 gc_lastGCUsed[2]; // 0: any; 1: top-level
 GLOBAL bool gc_running;
 void gc_forceGC(bool toplevel) {
   #if ENABLE_GC
+    #if TOPLEVEL_GC
+      run_countdown = 1; // make sure that, if this (possibly-non-toplevel) GC is ineffective, toplevel GC gets a guaranteed chance to run at the nearest possible time
+    #endif
     if (gc_running) fatal("starting GC while GC is in the middle of running");
     gc_running = 1;
     u64 startTime=0, startSize=0;

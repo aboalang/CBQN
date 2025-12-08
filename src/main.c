@@ -7,6 +7,7 @@
 #include "utils/file.h"
 #include "utils/time.h"
 #include "utils/interrupt.h"
+#include "utils/toplevel.h"
 
 #if defined(_WIN32) || defined(_WIN64)
   #include "windows/getline.h"
@@ -19,6 +20,9 @@
 #if USE_REPLXX_IO && !USE_REPLXX
   #error "Cannot use USE_REPLXX_IO without USE_REPLXX"
 #endif
+
+#define RUN_START Run curr_run_ = run_start();
+#define RUN_END run_end(curr_run_)
 
 STATIC_GLOBAL B replPath;
 GLOBAL B replName; // used in vm.c
@@ -561,7 +565,6 @@ static NOINLINE i64 readInt(char** p) {
   void before_exit(void) { }
 #endif
 
-
 B m_state(B path, B name, B args);
 NOINLINE B gsc_exec_inplace(B src, char* name, B args) {
   Block* block = bqn_compSc(src, m_state(incG(replPath), m_c8vec_0(name), args), gsc, true);
@@ -879,6 +882,7 @@ void cbqn_runLine0(char* ln, i64 read) {
 }
 
 void cbqn_runLine(char* ln, i64 len) {
+  Run e = run_start();
   if(CATCH) {
     cbqn_takeInterrupts(false);
     fprintf(stderr, "Error: "); printErrMsg(thrownMsg); fprintf(stderr, "\n");
@@ -887,7 +891,7 @@ void cbqn_runLine(char* ln, i64 len) {
     #if HEAP_VERIFY
       cbqn_heapVerify();
     #endif
-    gc_maybeGC(true);
+    run_end(e);
     return;
   }
   cbqn_takeInterrupts(true);
@@ -895,18 +899,31 @@ void cbqn_runLine(char* ln, i64 len) {
   #if HEAP_VERIFY
     cbqn_heapVerify();
   #endif
-  gc_maybeGC(true);
+  run_end(e);
   cbqn_takeInterrupts(false);
   popCatch();
 }
 
 #if WASM
 void cbqn_evalSrc(char* src, i64 len) {
+  Run e = run_start();
   B code = utf8Decode(src, len);
   B resFmt = bqn_fmt(bqn_exec(code, bi_N));
   printsB(resFmt); dec(resFmt);
   printf("\n");
+  run_end(e);
 }
+#endif
+
+#if TOPLEVEL_GC
+  GLOBAL ux run_nesting;
+  GLOBAL ux run_countdown = 1;
+  void run_slow() {
+    gc_maybeGC(true);
+    // gc_maybeGC is mildly-expensive even when it doesn't GC (has to sum up 64 or 128 `u64`s) so don't do it frequently
+    // primarily rely on non-toplevel GC setting countdown to 1
+    run_countdown = 64;
+  }
 #endif
 
 #if EMCC
@@ -979,23 +996,29 @@ int main(int argc, char* argv[]) {
             #define REQARG(X) if(*carg) { fprintf(stderr, "%s: -%s must end the option\n", argv[0], #X); exit(1); } if (i==argc) { fprintf(stderr, "%s: -%s requires an argument\n", argv[0], #X); exit(1); }
             case 'f': repl_init(); REQARG(f); goto execFile;
             case 'e': { repl_init(); REQARG(e);
+              RUN_START;
               dec(gsc_exec_inplace(utf8Decode0(argv[i++]), "(-e)", emptySVec()));
+              RUN_END;
               break;
             }
             case 'L': { repl_init(); break; } // just initialize. mostly for perf testing
             case 'p': { repl_init(); REQARG(p);
+              RUN_START;
               B r = gsc_exec_inplace(utf8Decode0(argv[i++]), "(-p)", emptySVec());
               if (FORMATTER) { r = bqn_fmt(r); printsB(r); }
               else { printI(r); }
               dec(r);
+              RUN_END;
               printf("\n");
               break;
             }
             case 'o': { repl_init(); REQARG(o);
+              RUN_START;
               B r = gsc_exec_inplace(utf8Decode0(argv[i++]), "(-o)", emptySVec());
               if (isAtm(r) || RNK(r)!=1) thrM("(-o): Value to print must be a string");
               printsB(r); decG(r);
               printf("\n");
+              RUN_END;
               break;
             }
             case 'M': { REQARG(M);
@@ -1031,6 +1054,9 @@ int main(int argc, char* argv[]) {
         args = HARR_FV(ap);
       }
       
+      RUN_START;
+      if (CATCH) { RUN_END; rethrow(); }
+      
       B execRes;
       if (execStdin) {
         execRes = gsc_exec_inplace(utf8DecodeA(stream_bytes(stdin)), "(stdin)", args);
@@ -1038,10 +1064,11 @@ int main(int argc, char* argv[]) {
         execRes = bqn_execFile(src, args);
       }
       dec(execRes);
+      
       #if HEAP_VERIFY
         cbqn_heapVerify();
       #endif
-      gc_forceGC(true);
+      RUN_END;
     }
   }
   if (startREPL) {

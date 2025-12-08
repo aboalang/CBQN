@@ -20,6 +20,7 @@
   #include "nfns.h"
   #include "ns.h"
   #include "utils/file.h"
+  #include "utils/toplevel.h"
 // ..continuing under "#if CBQN_EXPORT"
 
 // base interface defs for when GC stuff needs to be added in
@@ -58,18 +59,24 @@ BQN_EXP int bqn_type(BQNV v) {
   return typeInt(getB(v));
 }
 
+#define RUN_END_R(R) ({ AUTO r_ = (R); run_end(r); r_; })
+
 BQN_EXP BQNV bqn_call1(BQNV f, BQNV x) {
-  return makeX(c1(getB(f), inc(getB(x))));
+  Run r = run_start();
+  return RUN_END_R(makeX(c1(getB(f), inc(getB(x)))));
 }
 BQN_EXP BQNV bqn_call2(BQNV f, BQNV w, BQNV x) {
-  return makeX(c2(getB(f), inc(getB(w)), inc(getB(x))));
+  Run r = run_start();
+  return RUN_END_R(makeX(c2(getB(f), inc(getB(w)), inc(getB(x)))));
 }
 
 BQN_EXP BQNV bqn_eval(BQNV src) {
-  return makeX(bqn_exec(inc(getB(src)), bi_N));
+  Run r = run_start();
+  return RUN_END_R(makeX(bqn_exec(inc(getB(src)), bi_N)));
 }
 BQN_EXP BQNV bqn_evalCStr(const char* str) {
-  return makeX(bqn_exec(utf8Decode0(str), bi_N));
+  Run r = run_start();
+  return RUN_END_R(makeX(bqn_exec(utf8Decode0(str), bi_N)));
 }
 
 
