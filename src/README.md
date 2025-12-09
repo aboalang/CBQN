@@ -136,8 +136,8 @@ type field for heap-allocated objects:
   t_comp, t_block, t_body, t_scope, t_scopeExt, t_blBlocks // various compiled object things; see vm.h/vm.c
   t_fldAlias, t_arrMerge, t_vfyObj // various mutation target data holders; see vm.h/vm.c
   t_ns, t_nsDesc // namespace, namespace descriptor; NS, NSDesc
-  t_nfn, t_nfnDesc // native function, native function descriptor; NFn/NFnDesc
-  t_ffiType // FFI data object; BQNFFIType
+  t_nfn, t_nfnDesc // native function, native function descriptor; NFn, NFnDesc
+  t_ffiType, t_bvwArena // ffi.c things; BQNFFIType, BVWArena
   t_customObj // type with dynamic visit & free methods; CustomObj
   t_arbObj // generic arbitrary heap-allocated object
   t_talloc, t_temp // temporary allocation types; multiple uses
