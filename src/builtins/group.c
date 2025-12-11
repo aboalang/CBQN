@@ -10,6 +10,7 @@
 // COULD handle small-range 𝕨 with equals-replicate
 // If 𝕨 is sorted up (flag or ∧´1↓»⊸<𝕨), count with Singeli and make slices
 // If +´»⊸≠𝕨 is small, process in chunks as a separate case
+//   If chunks never share indices, get each result element as a slice
 // If +´𝕨<¯1 is large, filter out ¯1s.
 //   COULD recompute statistics, may have enabled chunked or sorted code
 // Remaining cases copy cells from 𝕩 individually
@@ -239,7 +240,10 @@ static B group_simple(B w, B x, ur xr, usz wia, usz xn, usz* xsh, u8 we) {
     usz i0 = ip[0];
     for (usz i=0; i<wia-1; i++) ip[i] = ip[i+1]-ip[i];
     ip[wia-1] = xn-ip[wia-1];
-    for (usz i = 0; i < wia; i++) len[wp[i]]+=ip[i];
+    usz dup = 0; // Becomes nonzero if any group isn't a simple slice
+    for (usz i = 0; i < wia; i++) {
+      usz* p=len+wp[i]; usz l=*p; dup|=l; *p=l+ip[i];
+    }
     
     void* xp = tyany_ptr(x);
     
@@ -253,12 +257,28 @@ static B group_simple(B w, B x, ur xr, usz wia, usz xn, usz* xsh, u8 we) {
       }
     if (csz==0) {
       allocBitGroups(rp, ria, z, xr, xsh, len, width);
-    } else if (!bits) {
+    } else if (bits) {
+      allocBitGroups(rp, ria, z, xr, xsh, len, width);
+      GROUP_CHUNKED(bit_cpyN)
+    } else if (dup!=0) {
       allocGroups(rp, ria, z, xt, xr, xsh, len, width, csz);
       GROUP_CHUNKED(MEM_CPY)
     } else {
-      allocBitGroups(rp, ria, z, xr, xsh, len, width);
-      GROUP_CHUNKED(bit_cpyN)
+      // Every non-empty result element is a slice
+      incByG(z,ria); for (usz j=0; j<ria; j++) rp[j]=z;
+      incByG(x,ria); usz nx = 0;
+      BSS2A slice = TI(x,slice);
+      #define GROUP_CH_SLICES(CSZ, SHAPE) \
+        for (u64 i=0, k=i0*CSZ; i<wia; i++) {          \
+          u64 k0 = k;                                  \
+          u64 l = ip[i], lc = l*CSZ; k += lc;          \
+          i32 n = wp[i]; if (n<0) continue; nx++;      \
+          Arr* c=slice(x,k0,lc); SHAPE; rp[n]=taga(c); \
+        }
+      if (xr==1) { GROUP_CH_SLICES(1,   arr_shVec(c)) }
+      else       { GROUP_CH_SLICES(csz, arr_shChangeLen(c,xr,xsh,l)) }
+      #undef GROUP_CH_SLICES
+      incByG(z,-(i64)nx); incByG(x,-(i64)(ria-nx));
     }
     #undef GROUP_CHUNKED
     decG(ind);
