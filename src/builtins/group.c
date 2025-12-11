@@ -30,9 +30,7 @@
 #endif
 #if SINGELI_SIMD
   // From slash.c
-  extern usz (*const si_count_sorted_i8 )(u8*, usz*, usz*, i8* , usz);
-  extern usz (*const si_count_sorted_i16)(u8*, usz*, usz*, i16*, usz);
-  extern usz (*const si_count_sorted_i32)(u8*, usz*, usz*, i32*, usz);
+  extern usz (**const si_count_sorted)(u8*, usz*, usz*, i8* , usz);
 #endif
 
 extern B ud_c1(B, B);
@@ -174,11 +172,7 @@ static B group_simple(B w, B x, ur xr, usz wia, usz xn, usz* xsh, u8 we) {
     u8* lenm = buf + oa+1;                // Length mod 128
     usz* ov = (usz*)buf; usz* oc = ov+os; // Overflow values and counts
     memset(lenm-1, 0, nc);
-    usz on;
-    #define CASE(N) case el_i##N: \
-      on = si_count_sorted_i##N(lenm, ov, oc, wp0, xn); break;
-    switch (we) { default:UD; CASE(8) CASE(16) CASE(32) }
-    #undef CASE
+    usz on = si_count_sorted[we-el_i8](lenm, ov, oc, wp0, xn);
     decG(w);
     ov[on] = ria;
     usz nx = 0; // Number of slices taken from x, for refcounting
