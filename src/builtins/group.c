@@ -63,6 +63,9 @@ static void allocBitGroups(B* rp, usz ria, B z, ur xr, usz* xsh, usz* len, usz w
   if (xr==1) for (usz j = 0; j < ria; j++) { usz l=len[j]; rp[j] = !l ? incG(z) : taga(arr_shVec(m_bitarr_nop(l))); }
   else       for (usz j = 0; j < ria; j++) { usz l=len[j]; rp[j] = !l ? incG(z) : taga(arr_shChangeLen(m_bitarr_nop(l*width), xr, xsh, l)); }
 }
+static void allocEmptyGroups(B* rp, usz ria, B z, B x, ur xr, usz* xsh, usz* len) { // csz==0
+  for (usz j = 0; j < ria; j++) { usz l=len[j]; rp[j] = !l ? incG(z) : taga(arr_shChangeLen(emptyArr(x, xr), xr, xsh, l)); }
+}
 
 // Integer list w
 static B group_simple(B w, B x, ur xr, usz wia, usz xn, usz* xsh, u8 we) {
@@ -256,7 +259,7 @@ static B group_simple(B w, B x, ur xr, usz wia, usz xn, usz* xsh, u8 we) {
         pos[n] += l;                              \
       }
     if (csz==0) {
-      allocBitGroups(rp, ria, z, xr, xsh, len, width);
+      allocEmptyGroups(rp, ria, z, x, xr, xsh, len);
     } else if (bits) {
       allocBitGroups(rp, ria, z, xr, xsh, len, width);
       GROUP_CHUNKED(bit_cpyN)
@@ -300,8 +303,8 @@ static B group_simple(B w, B x, ur xr, usz wia, usz xn, usz* xsh, u8 we) {
   for (usz i = 0; i < xn; i++) len[wp[i]]++; // overallocation makes this safe after n<-1 check
   
   u8 xk = xl - 3;
-  if (notB && csz==0) { // Empty cells, no movement needed
-    allocBitGroups(rp, ria, z, xr, xsh, len, width);
+  if (csz==0) { // Empty cells, no movement needed
+    allocEmptyGroups(rp, ria, z, x, xr, xsh, len);
   #if !SINGELI_SIMD // Dead code, handled above
   } else if (notB && sort) { // Sorted 𝕨, that is, partition 𝕩
     void* xp = tyany_ptr(x);
