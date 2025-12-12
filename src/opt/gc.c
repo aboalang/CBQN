@@ -198,7 +198,7 @@ void gc_forceGC(bool toplevel) {
     gc_run(toplevel);
     u64 endSize = tot_heapUsed();
     if (gc_log_enabled) {
-      fprintf(stderr, "GC: before: "N64d"B/"N64d"B", startSize, mm_heapAlloc);
+      fprintf(stderr, "GC:%s before: "N64d"B/"N64d"B", toplevel?" toplevel;":"", startSize, mm_heapAlloc);
       #if GC_LOG_DETAILED
         fprintf(stderr, "; kept "N64d"B="N64d" objs, freed "N64d"B, incl. directly "N64d"B="N64d" objs", gcs_visitBytes, gcs_visitCount, startSize-endSize, gcs_freedBytes, gcs_freedCount);
         fprintf(stderr, "; unknown refs: "N64d"B="N64d" objs", gcs_unkRefsBytes, gcs_unkRefsCount);
