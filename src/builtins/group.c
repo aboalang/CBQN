@@ -30,7 +30,7 @@
 #endif
 #if SINGELI_SIMD
   // From slash.c
-  extern usz (**const si_count_sorted)(u8*, usz*, usz*, i8* , usz);
+  extern usz (**const si_count_sorted)(u8*, usz*, usz*, void*, usz);
 #endif
 
 extern B ud_c1(B, B);
