@@ -431,11 +431,12 @@ static B recPick(B w, B x) { // doesn't consume
   ur xr = RNK(x);
   usz* xsh = SH(x);
   switch(TI(w,elType)) { default: UD;
+    case el_bit: { u64* wp = bitany_ptr(w); if(RNK(w)!=1)goto wrr; if (ia!=xr)goto wrl; PICK_IDX(c, bitp_get(wp,i),        ia, goto oob) return IGet(x,c); }
     case el_i8:  { i8*  wp = i8any_ptr (w); if(RNK(w)!=1)goto wrr; if (ia!=xr)goto wrl; PICK_IDX(c, wp[i],                 ia, goto oob) return IGet(x,c); }
     case el_i16: { i16* wp = i16any_ptr(w); if(RNK(w)!=1)goto wrr; if (ia!=xr)goto wrl; PICK_IDX(c, wp[i],                 ia, goto oob) return IGet(x,c); }
     case el_i32: { i32* wp = i32any_ptr(w); if(RNK(w)!=1)goto wrr; if (ia!=xr)goto wrl; PICK_IDX(c, wp[i],                 ia, goto oob) return IGet(x,c); }
     case el_f64: { f64* wp = f64any_ptr(w); if(RNK(w)!=1)goto wrr; if (ia!=xr)goto wrl; PICK_IDX(c, pick_convFloat(wp[i]), ia, goto oob) return IGet(x,c); }
-    case el_c8: case el_c16: case el_c32: case el_bit:
+    case el_c8: case el_c16: case el_c32:
     case el_B: {
       if (ia==0) {
         if (xr!=0) thrM("𝕨⊑𝕩: 𝕩 must be a unit if 𝕨 contains an empty array");
