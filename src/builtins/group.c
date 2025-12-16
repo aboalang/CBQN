@@ -6,12 +6,13 @@
 // SHOULD squeeze 𝕨
 // All statistics computed in the initial pass that finds ⌈´𝕨
 // If 𝕨 is boolean, compute from 𝕨¬⊸/𝕩 and 𝕨/𝕩
+//   Boolean 𝕨 with any sort flag: binary search, take+drop
 // COULD handle small-range 𝕨 with equals-replicate
+// If 𝕨 is sorted up (flag or ∧´1↓»⊸<𝕨), count with Singeli and make slices
 // If +´»⊸≠𝕨 is small, process in chunks as a separate case
+//   If chunks never share indices, get each result element as a slice
 // If +´𝕨<¯1 is large, filter out ¯1s.
 //   COULD recompute statistics, may have enabled chunked or sorted code
-// If ∧´1↓»⊸<𝕨, that is, ∧⊸≡𝕨, each result array is a slice of 𝕩
-//   COULD use slice types; seems dangerous--when will they be freed?
 // Remaining cases copy cells from 𝕩 individually
 //   Converts 𝕨 to i32, COULD handle smaller types
 //   CPU-sized cells handled quickly, 1-bit with bitp_get/set
@@ -27,6 +28,10 @@
   #define SINGELI_FILE group
   #include "../utils/includeSingeli.h"
 #endif
+#if SINGELI_SIMD
+  // From slash.c
+  extern usz (**const si_count_sorted)(u8*, usz*, usz*, void*, usz);
+#endif
 
 extern B ud_c1(B, B);
 extern B ne_c2(B, B, B);
@@ -34,6 +39,7 @@ extern B slash_c1(B, B);
 extern B slash_c2(B, B, B);
 extern B select_c2(B, B, B);
 extern B take_c2(B, B, B);
+extern B drop_c2(B, B, B);
 
 static Arr* arr_shChangeLen(Arr* a, ur r, usz* xsh, usz len) {
   assert(r > 1);
@@ -55,6 +61,9 @@ static void allocBitGroups(B* rp, usz ria, B z, ur xr, usz* xsh, usz* len, usz w
   if (xr==1) for (usz j = 0; j < ria; j++) { usz l=len[j]; rp[j] = !l ? incG(z) : taga(arr_shVec(m_bitarr_nop(l))); }
   else       for (usz j = 0; j < ria; j++) { usz l=len[j]; rp[j] = !l ? incG(z) : taga(arr_shChangeLen(m_bitarr_nop(l*width), xr, xsh, l)); }
 }
+static void allocEmptyGroups(B* rp, usz ria, B z, B x, ur xr, usz* xsh, usz* len) { // csz==0
+  for (usz j = 0; j < ria; j++) { usz l=len[j]; rp[j] = !l ? incG(z) : taga(arr_shChangeLen(emptyArr(x, xr), xr, xsh, l)); }
+}
 
 // Integer list w
 static B group_simple(B w, B x, ur xr, usz wia, usz xn, usz* xsh, u8 we) {
@@ -71,7 +80,7 @@ static B group_simple(B w, B x, ur xr, usz wia, usz xn, usz* xsh, u8 we) {
     #define ACCUM(T) \
       T prev = -1;                                  \
       for (usz i = 0; i < xn; i++) {                \
-        T n = ((T*)wp0)[i];                         \
+        T n = wp[i];                                \
         if (n>max) max = n;                         \
         bad |= n < -1;                              \
         neg += n == -1;                             \
@@ -80,18 +89,40 @@ static B group_simple(B w, B x, ur xr, usz wia, usz xn, usz* xsh, u8 we) {
         prev = n;                                   \
       }
   #endif
+  #if SINGELI_SIMD
+    // We'll branch off before neg/change are used except neg==xn
+    #define SORT_STATS neg = max==-1? xn : 0;
+  #else
+    #define SORT_STATS \
+      while (neg<xn && wp[neg]==-1) neg++;          \
+      change = 1 + max-wp[neg]; /* max possible */
+  #endif
   #define CASE(T) case el_##T: { \
-    T max = -1; ACCUM(T)                            \
-    if (wia>xn) { ria=((T*)wp0)[xn]; bad|=ria<-1; } \
+    T max = -1; T* wp = (T*)wp0;                    \
+    if (FL_HAS(w,fl_asc) && xn>0) {                 \
+      bad = wp[0] < -1;                             \
+      max = wp[xn-1];                               \
+      SORT_STATS                                    \
+    } else { ACCUM(T) }                             \
+    if (wia>xn) { ria=wp[xn]; bad|=ria<-1; }        \
     i64 m=(i64)max+1; if (m>ria) ria=m;             \
     break; }
   switch (we) { default:UD;
     CASE(i8) CASE(i16) CASE(i32)
     // Boolean w is special-cased before we would check sort or change
-    case el_bit: ria = xn? 1+bit_has(wp0,xn,1) : wia? bitp_get(wp0,0) : 0; break;
+    case el_bit:
+      if (xn==0) ria = wia? bitp_get(wp0,0) : 0;
+      else {
+        sort = FL_HAS(w,fl_dsc|fl_asc); // add dsc since it's easy to handle
+        ria = sort? bitp_get(wp0, FL_HAS(w,fl_dsc)? 0 : xn-1)
+                  : bit_has(wp0,xn,1);
+        ria++;
+      }
+      break;
   }
   #undef CASE
   #undef ACCUM
+  #undef SORT_STATS
   if (bad) thrM("𝕨⊔𝕩: 𝕨 can't contain elements less than ¯1");
   if (ria > (i64)(USZ_MAX)) thrOOM();
   
@@ -112,9 +143,18 @@ static B group_simple(B w, B x, ur xr, usz wia, usz xn, usz* xsh, u8 we) {
   }
   if (we==el_bit) {
     assert(ria == 2);
-    if (wia>xn) w = C2(take, m_f64(xn), w);
-    rp[1] = C2(slash, incG(w), incG(x));
-    rp[0] = C2(slash, bit_negate(w), x);
+    if (sort) {
+      bool dn = FL_HAS(w,fl_dsc);
+      u64 l = (dn? bit_boundary_dn : bit_boundary_up)(wp0, xn);
+      decG(w);
+      rp[0] = C2(take, m_f64(l), incG(x));
+      rp[1] = C2(drop, m_f64(l), x);
+      if (RARE(dn)) { B t=rp[0]; rp[0]=rp[1]; rp[1]=t; }
+    } else {
+      if (wia>xn) w = C2(take, m_f64(xn), w);
+      rp[1] = C2(slash, incG(w), incG(x));
+      rp[0] = C2(slash, bit_negate(w), x);
+    }
     return taga(r);
   }
   // Needed to make sure wia>0 for ip[wia-1] below
@@ -122,6 +162,45 @@ static B group_simple(B w, B x, ur xr, usz wia, usz xn, usz* xsh, u8 we) {
     FILL_TO(rp, el_B, 0, z, ria);
     goto dec_ret;
   }
+  
+  #if SINGELI_SIMD
+  if (sort) {
+    usz os = xn/128 + 1; // Possible overflow entries, plus sentinel
+    usz nc = 1+ria;      // Number of counts, includes -1
+    usz oa = 2*os*sizeof(usz);
+    TALLOC(u8, buf, oa + nc);
+    u8* lenm = buf + oa+1;                // Length mod 128
+    usz* ov = (usz*)buf; usz* oc = ov+os; // Overflow values and counts
+    memset(lenm-1, 0, nc);
+    usz on = si_count_sorted[we-el_i8](lenm, ov, oc, wp0, xn);
+    decG(w);
+    ov[on] = ria;
+    usz nx = 0; // Number of slices taken from x, for refcounting
+    incByG(z,ria); incByG(x,ria);
+    BSS2A slice = TI(x,slice);
+    #define GROUP_SLICES(L, SHAPE) \
+      for (usz i=lenm[-1], j=0, oi=0, e=ov[oi]; j<ria; j++) { \
+        usz l = lenm[j];                                      \
+        while (RARE(j==e)) { l+=oc[oi++]; e=ov[oi]; }         \
+        if (!l) rp[j] = z;                                    \
+        else {                                                \
+          Arr* c=slice(x,i,L); SHAPE; rp[j]=taga(c);          \
+          i+=L; nx++;                                         \
+        }                                                     \
+      }
+    if (xr == 1) {
+      GROUP_SLICES(l, arr_shVec(c))
+    } else {
+      usz csz = arr_csz(x);
+      GROUP_SLICES(l*csz, arr_shChangeLen(c,xr,xsh,l))
+    }
+    #undef GROUP_SLICES
+    incByG(z,-(i64)nx); incByG(x,-(i64)(ria-nx));
+    TFREE(buf); decG(x);
+    return taga(r);
+  }
+  #endif
+  
   TALLOC(usz, pos, 2*ria+1); usz* len = pos+ria+1;
   memset(pos, 0, sizeof(usz)*(2*ria+1));
   
@@ -140,7 +219,7 @@ static B group_simple(B w, B x, ur xr, usz wia, usz xn, usz* xsh, u8 we) {
   }
   
   // Few changes in 𝕨: move in chunks
-  if (xn>64 && notB && change<(xn*width)/32) {
+  if (xn>64 && notB && change<(xn*(width?width:1))/32) {
     u64* mp; B m = m_bitarrv(&mp, xn);
     u8* wp0 = tyany_ptr(w);
     we = TI(w,elType);
@@ -158,7 +237,10 @@ static B group_simple(B w, B x, ur xr, usz wia, usz xn, usz* xsh, u8 we) {
     usz i0 = ip[0];
     for (usz i=0; i<wia-1; i++) ip[i] = ip[i+1]-ip[i];
     ip[wia-1] = xn-ip[wia-1];
-    for (usz i = 0; i < wia; i++) len[wp[i]]+=ip[i];
+    usz dup = 0; // Becomes nonzero if any group isn't a simple slice
+    for (usz i = 0; i < wia; i++) {
+      usz* p=len+wp[i]; usz l=*p; dup|=l; *p=l+ip[i];
+    }
     
     void* xp = tyany_ptr(x);
     
@@ -171,13 +253,29 @@ static B group_simple(B w, B x, ur xr, usz wia, usz xn, usz* xsh, u8 we) {
         pos[n] += l;                              \
       }
     if (csz==0) {
+      allocEmptyGroups(rp, ria, z, x, xr, xsh, len);
+    } else if (bits) {
       allocBitGroups(rp, ria, z, xr, xsh, len, width);
-    } if (!bits) {
+      GROUP_CHUNKED(bit_cpyN)
+    } else if (dup!=0) {
       allocGroups(rp, ria, z, xt, xr, xsh, len, width, csz);
       GROUP_CHUNKED(MEM_CPY)
     } else {
-      allocBitGroups(rp, ria, z, xr, xsh, len, width);
-      GROUP_CHUNKED(bit_cpyN)
+      // Every non-empty result element is a slice
+      incByG(z,ria); for (usz j=0; j<ria; j++) rp[j]=z;
+      incByG(x,ria); usz nx = 0;
+      BSS2A slice = TI(x,slice);
+      #define GROUP_CH_SLICES(CSZ, SHAPE) \
+        for (u64 i=0, k=i0*CSZ; i<wia; i++) {          \
+          u64 k0 = k;                                  \
+          u64 l = ip[i], lc = l*CSZ; k += lc;          \
+          i32 n = wp[i]; if (n<0) continue; nx++;      \
+          Arr* c=slice(x,k0,lc); SHAPE; rp[n]=taga(c); \
+        }
+      if (xr==1) { GROUP_CH_SLICES(1,   arr_shVec(c)) }
+      else       { GROUP_CH_SLICES(csz, arr_shChangeLen(c,xr,xsh,l)) }
+      #undef GROUP_CH_SLICES
+      incByG(z,-(i64)nx); incByG(x,-(i64)(ria-nx));
     }
     #undef GROUP_CHUNKED
     decG(ind);
@@ -199,8 +297,9 @@ static B group_simple(B w, B x, ur xr, usz wia, usz xn, usz* xsh, u8 we) {
   for (usz i = 0; i < xn; i++) len[wp[i]]++; // overallocation makes this safe after n<-1 check
   
   u8 xk = xl - 3;
-  if (notB && csz==0) { // Empty cells, no movement needed
-    allocBitGroups(rp, ria, z, xr, xsh, len, width);
+  if (csz==0) { // Empty cells, no movement needed
+    allocEmptyGroups(rp, ria, z, x, xr, xsh, len);
+  #if !SINGELI_SIMD // Dead code, handled above
   } else if (notB && sort) { // Sorted 𝕨, that is, partition 𝕩
     void* xp = tyany_ptr(x);
     u64 i=neg*width;
@@ -221,6 +320,7 @@ static B group_simple(B w, B x, ur xr, usz wia, usz xn, usz* xsh, u8 we) {
       else       GROUP_SORT(bit_cpyN, rp[j] = taga(arr_shChangeLen(m_bitarr_nop(l*width), xr, xsh, l)))
     }
     #undef GROUP_SORT
+  #endif
   } else if (notB && xk <= 3) { // Cells of 𝕩 are CPU-sized
     void* xp = tyany_ptr(x);
     allocGroups(rp, ria, z, xt, xr, xsh, len, width, csz);

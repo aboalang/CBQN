@@ -862,7 +862,10 @@ static B finish_small_count(B r, u16* ov) {
   }
   return r;
 }
-static B finish_sorted_count(B r, usz* ov, usz* oc, usz on) {
+static B sorted_count(B r, i8* rp, u8 xe, void* xp, usz xia) {
+  usz os = xia/128;
+  TALLOC(usz, ov, 2*os); usz* oc = ov+os;
+  usz on = si_count_sorted[xe-el_i8]((u8*)rp, ov, oc, xp, xia);
   // Overflow values in ov are sorted but not unique
   // Set mo to the greatest sum of oc for equal ov values
   usz mo = 0, pv = 0, c = 0;
@@ -881,6 +884,7 @@ static B finish_sorted_count(B r, usz* ov, usz* oc, usz on) {
   else if (mo < I32_MAX) { RESIZE(i32, I32) }
   else                   { RESIZE(f64, F64) }
   #undef RESIZE
+  TFREE(ov);
   return FL_SET(r, fl_squoze); // Relies on having checked for boolean
 }
 #endif
@@ -898,7 +902,10 @@ B slash_im(B t, B x) {
   retry:
   switch(xe) { default: UD;
     case el_bit: {
-      usz sum = bit_sum(bitany_ptr(x), xia);
+      u64* xp = bitany_ptr(x);
+      usz sum = !FL_HAS(x,fl_dsc|fl_asc)?  bit_sum(xp, xia)
+              :  FL_HAS(x,fl_dsc)? bit_boundary_dn(xp, xia)
+                           : xia - bit_boundary_up(xp, xia);
       usz ria = 1 + (sum>0);
       f64* rp; r = m_f64arrv(&rp, ria);
       rp[sum>0] = sum; rp[0] = xia - sum;
@@ -915,13 +922,8 @@ B slash_im(B t, B x) {
     usz rmax=xia;                                                            \
     if (a<xia) {                                                             \
       if (FL_HAS(x,fl_asc)) {                                                \
-        usz ria = xp[xia-1] + 1;                                             \
-        usz os = xia/128;                                                    \
-        INIT_RES(8,ria)                                                      \
-        TALLOC(usz, ov, 2*os); usz* oc = ov+os;                              \
-        usz on = si_count_sorted_i##N((u8*)rp, ov, oc, xp, xia);             \
-        r = finish_sorted_count(r, ov, oc, on);                              \
-        TFREE(ov);                                                           \
+        usz ria = xp[xia-1] + 1; INIT_RES(8,ria)                             \
+        r = sorted_count(r, rp, xe, xp, xia);                                \
         break;                                                               \
       }                                                                      \
       for (usz i=a; i<xia; i++) { u##N c=xp[i]; if (c>max) max=c; }          \

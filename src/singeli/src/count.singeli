@@ -174,9 +174,10 @@ fn count_i32_i32(tab:*i32, x:*i32, n:usz) : void = count_adapt_runs{x, tab, n}
 # For i←/⁼x, store r←128|i, and i-r sparsely: x is ∧(/r)∾oc/ov
 # ov is sorted but may not be unique, and oc contains multiples of 128
 # Return the shared length of ov and oc
-fn count_sorted{T}(r:*u8, ov:*usz, oc:*usz, x:*T, n:usz) : usz = {
+fn count_sorted{T}(r:*u8, ov:*usz, oc:*usz, xv:*void, n:usz) : usz = {
   def V = [arch_defvw{}/width{T}]T
   def block = 128
+  x := *T~~xv
   i:usz = 0
   on:usz = 0
   def overflow{xu,c} = { store{ov, on, xu}; store{oc, on, c}; ++on }
@@ -219,6 +220,4 @@ fn count_sorted{T}(r:*u8, ov:*usz, oc:*usz, x:*T, n:usz) : usz = {
 export{'simd_count_i8',  count{i8}}
 export{'simd_count_i16', count{i16}}
 export{'simd_count_i32_i32', count_i32_i32}
-export{'si_count_sorted_i8',  count_sorted{i8}}
-export{'si_count_sorted_i16', count_sorted{i16}}
-export{'si_count_sorted_i32', count_sorted{i32}}
+export_tab{'si_count_sorted', each{count_sorted, tup{i8, i16, i32}}}
