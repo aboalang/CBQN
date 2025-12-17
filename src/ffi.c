@@ -161,22 +161,15 @@ typedef struct BoundFn {
   struct NFn;
   void* w_c1;
   void* w_c2;
-  #if FFI==2
-    i32 mutCount;
-    i32 wLen; // 0: not needed; -1: is whole array; ≥1: length
-    i32 xLen; // 0: length 0 array; else, ↑
-  #endif
+  i32 mutCount;
+  i32 wLen; // 0: not needed; -1: is whole array; ≥1: length
+  i32 xLen; // 0: length 0 array; else, ↑
 } BoundFn;
 STATIC_GLOBAL NFnDesc* boundFnDesc;
 STATIC_GLOBAL NFnDesc* foreignFnDesc;
 
 B boundFn_c1(B t,      B x) { BoundFn* c = c(BoundFn,t); return getB(((bqn_boundFn1)c->w_c1)(makeX(inc(c->obj)),           makeX(x))); }
 B boundFn_c2(B t, B w, B x) { BoundFn* c = c(BoundFn,t); return getB(((bqn_boundFn2)c->w_c2)(makeX(inc(c->obj)), makeX(w), makeX(x))); }
-
-typedef BQNV (*bqn_foreignFn1)(BQNV x);
-typedef BQNV (*bqn_foreignFn2)(BQNV w, BQNV x);
-B directFn_c1(B t,      B x) { BoundFn* c = c(BoundFn,t); return getB(((bqn_foreignFn1)c->w_c1)(          makeX(x))); }
-B directFn_c2(B t, B w, B x) { BoundFn* c = c(BoundFn,t); return getB(((bqn_foreignFn2)c->w_c2)(makeX(w), makeX(x))); }
 
 static B m_ffiFn(NFnDesc* desc, B obj, FC1 c1, FC2 c2, void* wc1, void* wc2) {
   BoundFn* r = mm_alloc(sizeof(BoundFn), t_nfn);
@@ -221,9 +214,6 @@ DEF_FREE(ffiFn) { dec(((BoundFn*)x)->obj); }
 
 
 #if FFI
-  #if FFI!=2
-    #error "Only FFI=0 and FFI=2 are supported"
-  #endif
   #if !__has_include(<ffi.h>)
     #error "<ffi.h> not found. Either install libffi and pkg-config, or add 'FFI=0' as a make argument to disable •FFI"
   #endif
@@ -262,7 +252,7 @@ static u32 styG(B x) {
   return o2cG(x);
 }
 
-#if FFI==2
+
 
 #if FFI_CHECKS
   static B nonNumber(B x) { // returns m_f64(0) if x is all numeric, otherwise the offending element
@@ -1054,14 +1044,6 @@ B libffiFn_c2(B t, B w, B x) {
 }
 B libffiFn_c1(B t, B x) { return libffiFn_c2(t, bi_N, x); }
 
-#else
-
-BQNFFIEnt ffi_parseDecoratedType(B arg, bool forRes) {
-  if (!isArr(arg) || IA(arg)!=1 || IGetU(arg,0).u!=m_c32('a').u) thrM("FFI: Only \"a\" arguments & return value supported with compile flag FFI=1");
-  return (BQNFFIEnt){};
-}
-#endif
-
 
 
 static u64 calcAtomSize(B chr) {
@@ -1386,7 +1368,7 @@ static B ptrobjSub_c1(B t, B x) {
 void ffi_init(void) {
   assert(sizeof(ffi_type) % sizeof(ffi_type*) == 0); // assumption made by ALLOC_TYPE_LIST
   boundFnDesc   = registerNFn(m_c8vec_0("(foreign function)"), boundFn_c1, boundFn_c2);
-  foreignFnDesc = registerNFn(m_c8vec_0("(foreign function)"), directFn_c1, directFn_c2);
+  foreignFnDesc = registerNFn(m_c8vec_0("(foreign function)"), c1_bad, c2_bad);
   ptrobj_ns = m_nnsDesc("read","write","cast","add","sub","field"); // first field must be an nfn whose object is the ptrh (needed for ptrobj_checkget)
   ptrReadDesc  = registerNFn(m_c8vec_0("(pointer).Read"), ptrobjRead_c1, c2_bad);
   ptrWriteDesc = registerNFn(m_c8vec_0("(pointer).Write"), ptrobjWrite_c1, ptrobjWrite_c2);

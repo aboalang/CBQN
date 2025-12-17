@@ -370,7 +370,7 @@ po ← { # parsed options
       "-fms-extensions", "-ffp-contract=off", "-fno-math-errno", "-fvisibility=hidden", "-fno-strict-aliasing",
       "-DBYTECODE_DIR="∾•file.Name bytecodeDir,
       "-DSINGELI="∾•Repr singeli,
-      "-DFFI="∾•Repr 2×ffi
+      "-DFFI="∾•Repr ffi
     ⟩
     args∾↩ ccClang⊑⟨
       ⟨"-Wno-parentheses"⟩ # gcc
