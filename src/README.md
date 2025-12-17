@@ -391,7 +391,9 @@ There's also `fatal("message")` that (at least currently) is kept in optimized b
 
 ## Garbage collector
 
-The garbage collector can run either at the top level (currently, between lines of REPL input) at full capability, where all unreferenced objects will be freed, or potentially during any allocation in a severely restricted mode where any object with a reference count not matching the expected value is assumed as a GC root (intention being that it's referred to by live code on the C stack, but it could also be a leak if an error left reference counts too high).
+The garbage collector can run at either:
+- the top level (i.e. between lines of REPL input, or when called from bqnffi.h while no other CBQN is up the stack) at full capability, where all unreferenced objects will be freed;
+- potentially during any allocation in a severely restricted mode where any object with a reference count not matching the expected value is assumed as a GC root (intention being that it's referred to by live code on the C stack, though it could also be a leak if an error left reference counts too high).
 
 Therefore, at any point of execution where an allocation or error happens, the heap must be in a valid state (that is, most allocated objects need all their pointer/object fields initialized (more precisely, anything used by the object's `void [type]_visit()` function (and `[type]_free` if the object may be GC'd))). Manually `mm_alloc`ing an object will result in an invalid initial state for most types, but higher-level allocation function helpers usually initialize them to a valid state (e.g. `m_c8arrv`, `m_tyarrp`, `m_md2D`, `m_scope`, `m_harr0p`, `m_fillarr0p`, `m_fillarrpEmpty`), but some do not (e.g. `m_harrUv`, `m_fillarrp`); those will need a `NOGC_E;` statement to be added after you've initialized them (and be careful to do that only when actually done - the debugging options for a GC during an incompletely-initialized heap aren't nice!)
 
@@ -447,14 +449,14 @@ Most toggles require a value of `1` to be enabled.
 #define NO_RYU       0 // disable usage of Ryu
 #define EACH_FILLS   0 // compute fills for ¨ and ⌜; may be forcibly disabled
 #define SFNS_FILLS   1 // compute fills for structural functions (∾, ≍, etc)
-#define CHECK_VALID  1 // check for valid arguments in places where that would be detrimental to performance
+#define CHECK_VALID  1 // check for argument validity in places where doing so can be significantly detrimental to performance
         // e.g. left argument sortedness of ⍋/⍒, incompatible changes in ⌾, etc
 #define USE_SETJMP   1 // whether setjmp is available & should be used for error catching (makes refcounts leakable)
 #define SEMANTIC_CATCH USE_SETJMP // whether catching should be assumed to be usable for operations which need to semantically change depending on that
 #define SEMANTIC_CATCH_BI SEMANTIC_CATCH // whether ⎊ will catch stuff
+#define TOPLEVEL_GC  1 // whether to attempt toplevel GC between running top-level things
 
 #define RYU_OPTIMIZE_SIZE 0 // reduce size of Ryu tables at the cost of some performance for number •Repr
-#define FFI_CHECKS   1 // check for valid arguments passed to FFI-d functions
 #define UNSAFE_SIZES 0 // disable safety checks on array length overflows
 
 // debugging stuff:
@@ -470,6 +472,11 @@ Most toggles require a value of `1` to be enabled.
 #define VERIFY_TAIL   (u) // number of bytes after the end of an array to verify not being improperly modified; 64 in DEBUG
 #define RT_VERIFY_ARGS  1 // rtverify: preserve arguments for printing on failure
 #define GC_EVERY_NTH_ALLOC (u) // force a GC on every n'th allocation (<=1 to GC on every alloc)
+
+// FFI stuff:
+#define FFI_CHECKS      1 // check that arguments passed to FFI-d functions are of the desired type
+#define BQNV_NO_REUSE   0 // never reuse bqnffi.h BQNV wrapper objects, therefore detecting all BQNV use-after-frees & double-frees; requires DIRECT_BQNV==0
+#define DIRECT_BQNV     0 // make BQNV have the same representation as B, instead of wrapping them in an object; requires FFI_TOPLEVEL_GC==0 for proper functionality
 
 // some somewhat-outdated/unmaintained things:
 #define RT_PERF   0   // time runtime primitives
