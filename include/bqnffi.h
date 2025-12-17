@@ -1,3 +1,6 @@
+#ifndef BQNFFI_H
+#define BQNFFI_H
+
 #include<stddef.h>
 #include<stdint.h>
 #include<stdbool.h>
@@ -125,3 +128,5 @@ BQN_EXP const uint32_t* bqn_directC32(BQNV a);
 #ifdef __cplusplus
 }
 #endif
+
+#endif // BQNFFI_H
