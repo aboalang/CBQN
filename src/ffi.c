@@ -24,7 +24,7 @@
 // ..continuing under "#if CBQN_EXPORT"
 
 #ifndef DIRECT_BQNV
-  #define DIRECT_BQNV 1
+  #define DIRECT_BQNV 0
 #endif
 
 #ifndef BVW_ARENA_SZ
