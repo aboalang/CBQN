@@ -1683,7 +1683,7 @@ static char* const dsv_strs[] = {
 };
 
 
-u32* const dsv_text[] = {
+INIT_GLOBAL u32* const dsv_text[] = {
   #define F(L,N,B) N,
   FOR_DEFAULT_SYSVALS(F)
   #undef F

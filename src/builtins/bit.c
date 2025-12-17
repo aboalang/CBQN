@@ -7,7 +7,7 @@ typedef void (*AndBytesFn)(u8*, u8*, u64, u64);
   extern uint64_t* const si_spaced_masks;
   #define SINGELI_FILE bit_arith
   #include "../utils/includeSingeli.h"
-  const AndBytesFn andBytes_fn = si_andBytes;
+  INIT_GLOBAL const AndBytesFn andBytes_fn = si_andBytes;
   #define BITARITH_IDX(OP) (OP-op_add)*4 + owl-3
 #else
   static void base_andBytes(u8* r, u8* x, u64 repeatedMask, u64 numBytes) {
@@ -18,7 +18,7 @@ typedef void (*AndBytesFn)(u8*, u8*, u64, u64);
       for (usz j = 0; j < (numBytes&7); j++) r[i*8 + j] = v>>(j*8);
     }
   }
-  const AndBytesFn andBytes_fn = base_andBytes;
+  INIT_GLOBAL const AndBytesFn andBytes_fn = base_andBytes;
 #endif
 
 

@@ -569,7 +569,10 @@ NOINLINE void apd_sh_fail(ApdMut* m, B x, u8 mode) {
 #endif
 
 void apd_widen(ApdMut* m, B x, ApdFn* const* fns);
-ApdFn* const apd_tot_fns[];  ApdFn* const apd_sh0_fns[];  ApdFn* const apd_sh1_fns[];  ApdFn* const apd_sh2_fns[];
+static ApdFn* const apd_tot_fns[];
+static ApdFn* const apd_sh0_fns[];
+static ApdFn* const apd_sh1_fns[];
+static ApdFn* const apd_sh2_fns[];
 
 #define APD_OR_FILL_0(X)
 #define APD_OR_FILL_1(X) \
@@ -625,11 +628,11 @@ APD_MK(f64, 0,       ((f64*)a)[p0]=o2fG(x),  xe<=el_f64)  APD_MK(B,   1, ((B*)a)
 NOINLINE void apd_shE_T(ApdMut* m, B x) { APD_SHH_CHK(2) }
 NOINLINE void apd_shE_B(ApdMut* m, B x) { APD_SHH_CHK(2) }
 
-#define APD_FNS(N) ApdFn* const apd_##N##_fns[] = {apd_##N##_bit,apd_##N##_i8,apd_##N##_i16,apd_##N##_i32,apd_##N##_f64,apd_##N##_c8,apd_##N##_c16,apd_##N##_c32,apd_##N##_B}
+#define APD_FNS(N) static ApdFn* const apd_##N##_fns[] = {apd_##N##_bit,apd_##N##_i8,apd_##N##_i16,apd_##N##_i32,apd_##N##_f64,apd_##N##_c8,apd_##N##_c16,apd_##N##_c32,apd_##N##_B}
 APD_FNS(tot);
 APD_FNS(sh0); APD_FNS(sh1); APD_FNS(sh2);
 #undef APD_FNS
-ApdFn* const apd_shE_fns[] = {apd_shE_T,apd_shE_T,apd_shE_T,apd_shE_T,apd_shE_T,apd_shE_T,apd_shE_T,apd_shE_T,apd_shE_B};
+static ApdFn* const apd_shE_fns[] = {apd_shE_T,apd_shE_T,apd_shE_T,apd_shE_T,apd_shE_T,apd_shE_T,apd_shE_T,apd_shE_T,apd_shE_B};
 
 NOINLINE Arr* apd_ret_end(ApdMut* m, u32 ty) { NOGC_E; return m->obj; }
 NOINLINE Arr* apd_fill_end(ApdMut* m, u32 ty) {

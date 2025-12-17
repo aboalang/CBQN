@@ -25,7 +25,7 @@ static bool bit_isSorted(void* data, u64 down, usz n) {
 
 #if SINGELI_SIMD
   typedef bool (*IsSortedFn)(void*, u64, usz);
-  IsSortedFn is_sorted[el_B];
+  INIT_GLOBAL IsSortedFn is_sorted[el_B];
   #define SINGELI_FILE sort
   #include "../utils/includeSingeli.h"
 #endif

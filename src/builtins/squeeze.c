@@ -207,10 +207,10 @@ static B squeeze_B(B x, Arr* xa, u8 type, ux ia) {
   return x;
 }
 
-//                                  el_bit            el_i8         el_i16        el_i32        el_f64        el_c8             el_c16        el_c32        el_B
-SqueezeFn squeeze_numFns[el_MAX] = {squeeze_smallest, squeeze_i8,   squeeze_i16,  squeeze_i32,  squeeze_f64,  squeeze_smallest, squeeze_nope, squeeze_nope, squeeze_B_numMaybe};
-SqueezeFn squeeze_chrFns[el_MAX] = {squeeze_smallest, squeeze_nope, squeeze_nope, squeeze_nope, squeeze_nope, squeeze_smallest, squeeze_c16,  squeeze_c32,  squeeze_B_chrMaybe};
-SqueezeFn squeeze_anyFns[el_MAX] = {squeeze_smallest, squeeze_i8,   squeeze_i16,  squeeze_i32,  squeeze_f64,  squeeze_smallest, squeeze_c16,  squeeze_c32,  squeeze_B};
+//                                         el_bit            el_i8         el_i16        el_i32        el_f64        el_c8             el_c16        el_c32        el_B
+static SqueezeFn squeeze_numFns[el_MAX] = {squeeze_smallest, squeeze_i8,   squeeze_i16,  squeeze_i32,  squeeze_f64,  squeeze_smallest, squeeze_nope, squeeze_nope, squeeze_B_numMaybe};
+static SqueezeFn squeeze_chrFns[el_MAX] = {squeeze_smallest, squeeze_nope, squeeze_nope, squeeze_nope, squeeze_nope, squeeze_smallest, squeeze_c16,  squeeze_c32,  squeeze_B_chrMaybe};
+static SqueezeFn squeeze_anyFns[el_MAX] = {squeeze_smallest, squeeze_i8,   squeeze_i16,  squeeze_i32,  squeeze_f64,  squeeze_smallest, squeeze_c16,  squeeze_c32,  squeeze_B};
 
 NOINLINE B int_squeeze_sorted(B x, Arr* xa, u8 type, ux ia) {
   assert(elInt(TI(x,elType)));

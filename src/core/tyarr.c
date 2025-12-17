@@ -1,32 +1,32 @@
 #include "../core.h"
 #include "../utils/mut.h"
 
-u8 const elType2type[] = {
+INIT_GLOBAL u8 const elType2type[] = {
   [el_i8 ] = t_i8arr, [el_c8 ] = t_c8arr,
   [el_i16] = t_i16arr,[el_c16] = t_c16arr,
   [el_i32] = t_i32arr,[el_c32] = t_c32arr,
   [el_bit] = t_bitarr,[el_f64] = t_f64arr,
   [el_B] = t_invalid, [el_MAX] = t_invalid
 };
-u8 const elTypeWidth[] = {
+INIT_GLOBAL u8 const elTypeWidth[] = {
   [el_i8 ] = 1, [el_c8 ] = 1,
   [el_i16] = 2, [el_c16] = 2,
   [el_i32] = 4, [el_c32] = 4,
   [el_f64] = 8, [el_B  ] = 8, [el_bit] = 0
 };
-u8 const elwBitLogT[] = {
+INIT_GLOBAL u8 const elwBitLogT[] = {
   [el_i8 ] = 3, [el_c8 ] = 3,
   [el_i16] = 4, [el_c16] = 4,
   [el_i32] = 5, [el_c32] = 5,
   [el_f64] = 6, [el_B  ] = 6, [el_bit] = 0
 };
-u8 const elwByteLogT[] = {
+INIT_GLOBAL u8 const elwByteLogT[] = {
   [el_i8 ] = 0, [el_c8 ] = 0,
   [el_i16] = 1, [el_c16] = 1,
   [el_i32] = 2, [el_c32] = 2,
   [el_f64] = 3, [el_B  ] = 3, [el_bit] = 99
 };
-u8 const arrTypeWidthLog[] = {
+INIT_GLOBAL u8 const arrTypeWidthLog[] = {
   [t_bitarr]=0, // 0 for mut.c hack to allow restoring a bitarr offset from array pointer & arrTypeWidthLog-"corrected" element pointer
   [t_i8arr ]=0, [t_i8slice ]=0, [t_c8arr ]=0, [t_c8slice ]=0,
   [t_i16arr]=1, [t_i16slice]=1, [t_c16arr]=1, [t_c16slice]=1,
@@ -34,7 +34,7 @@ u8 const arrTypeWidthLog[] = {
   [t_f64arr]=3, [t_f64slice]=3,
   [t_harr  ]=3, [t_hslice  ]=3, [t_fillarr]=3,[t_fillslice]=3
 };
-u8 const arrTypeBitsLog[] = {
+INIT_GLOBAL u8 const arrTypeBitsLog[] = {
   [t_bitarr]=0,
   [t_i8arr ]=3, [t_i8slice ]=3, [t_c8arr ]=3, [t_c8slice ]=3,
   [t_i16arr]=4, [t_i16slice]=4, [t_c16arr]=4, [t_c16slice]=4,

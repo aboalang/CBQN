@@ -151,8 +151,8 @@ typedef size_t ux;
 #define STR0(X) #X
 #define STR1(X) STR0(X)
 #define INIT_GLOBAL __attribute__((visibility("hidden"))) // global variable set once during initialization, to the same value always
-#define GLOBAL INIT_GLOBAL // global variable mutated potentially multiple times, or set to a value referencing the heap
-#define STATIC_GLOBAL static // GLOBAL but static
+#define GLOBAL __attribute__((visibility("hidden"))) // global variable mutated potentially multiple times, or set to a value referencing the heap
+#define STATIC_GLOBAL static // GLOBAL (i.e. may be state-specific) but static
 
 
 #if USE_REPLXX_IO

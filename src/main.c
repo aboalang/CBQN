@@ -164,7 +164,7 @@ static NOINLINE i64 readInt(char** p) {
     if (writeCfg) cfg_changed();
   }
   
-  extern u32* const dsv_text[];
+  extern INIT_GLOBAL u32* const dsv_text[];
   STATIC_GLOBAL B sysvalNames, sysvalNamesNorm;
   
   NOINLINE void fill_color(ReplxxColor* cols, int s, int e, ReplxxColor col) {

@@ -71,9 +71,12 @@ CMP_REC(ne, ne, swapped=0;)
   #define CMP_AA_F(N, OP, BX) \
     CMP_AA0(N, u1, ({usz bia = BIT_N(l); vfor (usz i=0; i<bia; i++) { u64 wv=((u64*)w)[i], xv=((u64*)x)[i]; ((u64*)r)[i] = BX; }});) \
     CMP_AA1(N, i8, OP) CMP_AA1(N, i16, OP) CMP_AA1(N, i32, OP) CMP_AA1(N, f64, OP) \
-    const CmpAAFn base_##N##AA##_u32 = base_##N##AA##_i32;
+    static const CmpAAFn base_##N##AA##_u32 = base_##N##AA##_i32;
   
-  #define CMP_AA_C0(N, OP) const CmpAAFn base_##N##AA##_u8 = base_##N##AA##_i8; const CmpAAFn base_##N##AA##_u16 = base_##N##AA##_i16;
+  #define CMP_AA_C0(N, OP) \
+    static const CmpAAFn base_##N##AA##_u8  = base_##N##AA##_i8; \
+    static const CmpAAFn base_##N##AA##_u16 = base_##N##AA##_i16;
+  
   #define CMP_AA_C1(N, OP) CMP_AA1(N, u8, OP) CMP_AA1(N, u16, OP)
   CMP_AA_F(eq, ==, ~wv ^ xv) CMP_AA_C0(eq, ==)
   CMP_AA_F(ne, !=,  wv ^ xv) CMP_AA_C0(ne, !=)

@@ -985,7 +985,7 @@ NOINLINE Scope* m_scope(Body* body, Scope* psc, u16 varAm, i32 initVarAm, B* ini
 
 B execBlockInplaceImpl(Body* body, Scope* sc, Block* block) { return execBodyInplaceI(block->bodies[0], sc, block); }
 
-bool jit_enabled = true;
+GLOBAL bool jit_enabled = true;
 #if JIT_START != -1
 B mnvmExecBodyInplace(Body* body, Scope* sc) {
   if (!jit_enabled) return evalBC(body, sc, body->bl);
@@ -1207,7 +1207,7 @@ static void allocStack(void** curr, void** start, void** end, i32 elSize, i32 co
 GLOBAL B oomMessage;
 
 
-u32 const bL_m[BC_SIZE] = { // bytecode length map
+INIT_GLOBAL u32 const bL_m[BC_SIZE] = { // bytecode length map
   [FN1C]=1, [FN2C]=1, [FN1O]=1, [FN2O]=1,
   [MD1C]=1, [MD2C]=1, [MD2R]=1,
   [TR2D]=1, [TR3D]=1, [TR3O]=1,
@@ -1228,7 +1228,7 @@ u32 const bL_m[BC_SIZE] = { // bytecode length map
   
   [FN2Oi]=5, [SETH2]=5, [PRED2]=5,
 };
-i32 const sD_m[BC_SIZE] = { // stack diff map
+INIT_GLOBAL i32 const sD_m[BC_SIZE] = { // stack diff map
   [PUSH ]= 1, [DYNO ]= 1, [DYNM]= 1, [DFND]= 1, [VARO]= 1, [VARM]= 1, [DFND0]= 1, [DFND1]=1, [DFND2]=1,
   [VARU ]= 1, [EXTO ]= 1, [EXTM]= 1, [EXTU]= 1, [SYSV]= 1, [ADDI]= 1, [ADDU ]= 1, [NOTM ]= 1,
   [FN1Ci]= 0, [FN1Oi]= 0, [CHKV]= 0, [VFYM]= 0, [FLDO]= 0, [FLDG]= 0, [FLDM]= 0, [RETD ]= 0, [ALIM ]=0,
@@ -1242,7 +1242,7 @@ i32 const sD_m[BC_SIZE] = { // stack diff map
   
   [FAIL]=0
 };
-i32 const sC_m[BC_SIZE] = { // stack consumed map
+INIT_GLOBAL i32 const sC_m[BC_SIZE] = { // stack consumed map
   [PUSH]=0, [DYNO]=0, [DYNM]=0, [DFND]=0, [VARO ]=0,[VARM ]=0,[NOTM ]=0, [VARU]=0, [EXTO]=0, [EXTM]=0,
   [EXTU]=0, [SYSV]=0, [ADDI]=0, [ADDU]=0, [DFND0]=0,[DFND1]=0,[DFND2]=0,
   
@@ -1418,7 +1418,7 @@ native_print:
   }
 }
 
-bool omitStackEntries = true;
+GLOBAL bool omitStackEntries = true;
 NOINLINE void vm_pst(Env* s, Env* e) { // e not included
   assert(s<=e);
   i64 l = e-s;

@@ -109,7 +109,7 @@ bool indistinguishable(B w, B x) {
 }
 
 static const u8 n = 99;
-u8 const matchFnData[] = { // for the main diagonal, amount to shift length by; otherwise, whether to swap arguments
+INIT_GLOBAL u8 const matchFnData[] = { // for the main diagonal, amount to shift length by; otherwise, whether to swap arguments
   0,0,0,0,0,n,n,n,
   1,0,0,0,0,n,n,n,
   1,1,1,0,0,n,n,n,

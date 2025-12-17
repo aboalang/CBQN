@@ -23,7 +23,7 @@ B atan2_c2(B, B, B);
 B leading_axis_arith(FC2 fc2, B w, B x, usz* wsh, usz* xsh, ur mr);
 
 typedef void (*AndBytesFn)(u8*, u8*, u64, u64);
-extern const AndBytesFn andBytes_fn;
+extern INIT_GLOBAL const AndBytesFn andBytes_fn;
 
 #if SINGELI_SIMD
   #include "../singeli/c/arithdDispatch.c"

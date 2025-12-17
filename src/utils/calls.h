@@ -29,7 +29,7 @@ CMP_DEF(le, AS);
 typedef bool (*MatchFn)(void* a, void* b, u64 l, u64 data);
 extern INIT_GLOBAL MatchFn matchFns[];
 extern INIT_GLOBAL MatchFn matchFnsR[];
-extern u8 const matchFnData[];
+extern INIT_GLOBAL u8 const matchFnData[];
 typedef struct { MatchFn fn; u8 data; } MatchFnObj;
 #define MATCH_GET( W_ELT, X_ELT) ({ u8 mfn_i_ = ((W_ELT)*8 + (X_ELT)); (MatchFnObj){.fn=matchFns [mfn_i_], .data=matchFnData[mfn_i_]}; })
 #define MATCHR_GET(W_ELT, X_ELT) ({ u8 mfn_i_ = ((W_ELT)*8 + (X_ELT)); (MatchFnObj){.fn=matchFnsR[mfn_i_], .data=matchFnData[mfn_i_]}; })
