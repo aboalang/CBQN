@@ -430,7 +430,8 @@ Most toggles require a value of `1` to be enabled.
 #define MM 1             // memory manager; 0 - malloc (no GC); 1 - buddy; 2 - 2buddy
 #define HEAP_MAX ~0ULL   // initial heap max size (overridden by -M)
 #define JIT_ENABLED (u)  // force-enable or force-disable JIT (x86_64-only)
-#define RANDSEED 0       // random seed used to make •rand (0 uses time)
+#define RANDSEED 0       // seed for initializing •rand (0 uses time)
+#define HASHSEED 0       // seed for hashing secret (0 uses time)
 #define JIT_START 2      // number of calls for when to start JITting (x86_64-only); default is 2, defined in vm.h
         // -1: never JIT (≈ JIT_ENABLED=0)
         //  0: JIT everything

@@ -1010,18 +1010,6 @@ int main(int argc, char* argv[]) {
               mm_heapMax = am*1024*1024;
               break;
             }
-            #ifdef PERF_TEST
-            case 'R': { repl_init(); REQARG(R);
-              B path = utf8Decode0(argv[i++]);
-              B lines = path_lines(path);
-              usz ia = IA(lines);
-              SGet(lines)
-              for (u64 i = 0; i < ia; i++) {
-                dec(gsc_exec_inplace(Get(lines, i), "(-R)", emptySVec()));
-              }
-              break;
-            }
-            #endif
             case 'h': goto print_help;
             case 'r': { startREPL=true;                  break; }
             case 's': { startREPL=true; silentREPL=true; break; }

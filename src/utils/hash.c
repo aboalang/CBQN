@@ -92,11 +92,12 @@ INIT_GLOBAL u64 wy_secret[4];
 void hash_init(void) {
   u64 bad1=0xa0761d6478bd642full; // values wyhash64 is afraid of
   u64 bad2=0xe7037ed1a0b428dbull;
-  again:
-  #ifdef PERF_TEST
-    make_secret(0, wy_secret);
+  #if HASHSEED
+    u64 seed = HASHSEED;
   #else
-    make_secret(nsTime(), wy_secret);
+    u64 seed = nsTime();
   #endif
+  again:
+  make_secret(seed++, wy_secret);
   for (u64 i = 0; i < 4; i++) if(wy_secret[i]==bad1 || wy_secret[i]==bad2) goto again;
 }
