@@ -127,7 +127,7 @@
   static void bvwArena_visit(BVWArena* c) {
     mm_visitP(c);
   }
-  static void gcvw_gcFn(void) {
+  static void bvw_gcFn(void) {
     bvw_forEach(bvw_visit, bvwArena_visit);
   }
 #endif
@@ -138,7 +138,7 @@ STATIC_GLOBAL NFnDesc* boundFnDesc;
 static void bqnffi_init() {
   boundFnDesc = registerNFn(m_c8vec_0("(foreign function)"), boundFn_c1, boundFn_c2);
   #if !DIRECT_BQNV
-    gc_addFn(gcvw_gcFn);
+    gc_addFn(bvw_gcFn);
     TIi(t_bvwArena,visit) = noop_visit;
   #endif
 }
