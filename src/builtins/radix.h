@@ -6,10 +6,9 @@
 // #define GRADE_UD(U,D) U
 // to do the appropriate sums for an ascending radix sort.
 
-#define RDX_PRE(K) s##K=c##K[j]+=s##K
-#define RDX_SUM_1(T)                                  T s0=0;                   for(usz j=0;j<256;j++) { RDX_PRE(0); }
-#define RDX_SUM_2(T)  GRADE_UD(c1[0]=0;,)             T s0=0, s1=0;             for(usz j=0;j<256;j++) { RDX_PRE(0); RDX_PRE(1); }
-#define RDX_SUM_4(T)  GRADE_UD(c1[0]=c2[0]=c3[0]=0;,) T s0=0, s1=0, s2=0, s3=0; for(usz j=0;j<256;j++) { RDX_PRE(0); RDX_PRE(1); RDX_PRE(2); RDX_PRE(3); }
+#define RDX_SUM_1(T)                                  T s0=0;                   for(usz j=0;j<256;j++) { s0+=c0[j];                                  c0[j]=s0;                               }
+#define RDX_SUM_2(T)  GRADE_UD(c1[0]=0;,)             T s0=0, s1=0;             for(usz j=0;j<256;j++) { s0+=c0[j]; s1+=c1[j];                       c0[j]=s0; c1[j]=s1;                     }
+#define RDX_SUM_4(T)  GRADE_UD(c1[0]=c2[0]=c3[0]=0;,) T s0=0, s1=0, s2=0, s3=0; for(usz j=0;j<256;j++) { s0+=c0[j]; s1+=c1[j]; s2+=c2[j]; s3+=c3[j]; c0[j]=s0; c1[j]=s1; c2[j]=s2; c3[j]=s3; }
 
 #if SINGELI_X86_64
 extern void (*const si_scan_pluswrap_u8)(uint8_t* v0,uint8_t* v1,uint64_t v2,uint8_t v3);
