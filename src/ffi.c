@@ -127,7 +127,7 @@
   static void bvwArena_visit(BVWArena* c) {
     mm_visitP(c);
   }
-  static void gcvw_gcFn() {
+  static void gcvw_gcFn(void) {
     bvw_forEach(bvw_visit, bvwArena_visit);
   }
 #endif
