@@ -440,6 +440,12 @@ po ← { # parsed options
       ;
         rdynamic ← (¬wasi) ∧ exportSymbols ∧ ¬windows
         bin ↩ {replxx? cxx; cc} DOpt "LD"
+        args∾↩ emcc / ⟨
+          "-sEXPORTED_FUNCTIONS=_main,_cbqn_runLine,_cbqn_evalSrc,_malloc,_free"
+          "-sEXPORTED_RUNTIME_METHODS=ccall,cwrap,HEAPU8"
+          "-sALLOW_MEMORY_GROWTH=1"
+          "-sSTACK_SIZE="∾•Repr 1024×1024
+        ⟩ ∾ debug / "-sASSERTIONS"‿"-sSTACK_OVERFLOW_CHECK=2"
         args∾↩ ubsanFlags
         args∾↩ defLibs / ⟨"-lm"⟩
         args∾↩ ⟨⟩ DOpt "LD_LIBS"
@@ -448,7 +454,6 @@ po ← { # parsed options
         args∾↩ GetOpt "lf"
         args∾↩ allFlags
         args∾↩ GetOpt "LDFLAGS"
-        args∾↩ (           emcc) / ⟨"-sEXPORTED_FUNCTIONS=_main,_cbqn_runLine,_cbqn_evalSrc,_malloc,_free", "-sEXPORTED_RUNTIME_METHODS=ccall,cwrap,HEAPU8", "-s", "ALLOW_MEMORY_GROWTH=1"⟩
         args∾↩ (           wasi) / ⟨"-lwasi-emulated-mman", "--target=wasm32-wasi", "-Wl,-z,stack-size=8388608", "-Wl,--initial-memory=67108864"⟩
         args∾↩ (sharedLib∧ wasi) / ⟨"-mexec-model=reactor", "-Wl,--export-dynamic", "-Wl,--export=malloc", "-Wl,--export=free"⟩
         args∾↩ (sharedLib∧¬wasi) / ⟨"-shared"⟩
