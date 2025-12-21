@@ -1567,11 +1567,11 @@ NOINLINE B couple_im(B t, B x) {
   return C1(select,x);
 }
 
-B reverse_ucw(B t, B o, B w, B x) { return reverse_ix(m_f64(0), w, c1(o, reverse_c2(t, inc(w), x))); }
-B reverse_uc1(B t, B o, B x) { return C1(reverse,          c1(o, reverse_c1(t, x))); }
-B enclose_uc1(B t, B o, B x) { return enclose_im(m_f64(0), c1(o, m_unit(x))); }
-B pair_uc1   (B t, B o, B x) { return pair_im   (m_f64(0), c1(o, m_vec1(x))); }
-B couple_uc1 (B t, B o, B x) { return couple_im (m_f64(0), c1(o, couple_c1(t, x))); }
+B reverse_ucw(B t, B o, B w, B x) { return reverse_ix(bi_z, w, c1(o, reverse_c2(t, inc(w), x))); }
+B reverse_uc1(B t, B o, B x) { return C1(reverse,      c1(o, reverse_c1(t, x))); }
+B enclose_uc1(B t, B o, B x) { return enclose_im(bi_z, c1(o, m_unit(x))); }
+B pair_uc1   (B t, B o, B x) { return pair_im   (bi_z, c1(o, m_vec1(x))); }
+B couple_uc1 (B t, B o, B x) { return couple_im (bi_z, c1(o, couple_c1(t, x))); }
 
 void sfns_init(void) {
   c(BFn,bi_pick)->uc1 = pick_uc1;

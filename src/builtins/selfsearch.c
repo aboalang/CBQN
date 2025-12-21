@@ -87,7 +87,7 @@ SHOULD_INLINE bool canCompare64_norm(B* x, void** xp, usz n) {
   if (e == el_B) return 0;
   if (e == el_f64) {
     B r = asNormalized(*x, n, true);
-    if (r.u == m_f64(0).u) return 0;
+    if (q_z(r)) return 0;
     *x = r;
     *xp = tyany_ptr(r);
   }

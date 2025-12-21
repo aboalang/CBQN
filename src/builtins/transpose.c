@@ -475,7 +475,7 @@ B transp_im(B t, B x) {
 }
 
 B transp_uc1(B t, B o, B x) {
-  return transp_im(m_f64(0), c1(o, transp_c1(t, x)));
+  return transp_im(bi_z, c1(o, transp_c1(t, x)));
 }
 
 // Consumes w; return bi_N if w contained duplicates

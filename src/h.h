@@ -377,6 +377,7 @@ static const B bi_noVar  = (B) {.u = (u64)0x7FF2C00000000001ull };
 static const B bi_okHdr  = (B) {.u = (u64)0x7FF2000000000002ull };
 static const B bi_optOut = (B) {.u = (u64)0x7FF2800000000003ull };
 static const B bi_noFill = (B) {.u = (u64)0x7FF2000000000005ull };
+static const B bi_z      = (B) {.u = 0}; // non-heap-allocated object placeholder
 extern GLOBAL B bi_emptyHVec, bi_emptyIVec, bi_emptyCVec, bi_emptySVec;
 #define emptyHVec() incG(bi_emptyHVec)
 #define emptyIVec() incG(bi_emptyIVec)
@@ -506,6 +507,7 @@ FORCE_INLINE bool q_c16(B x) { return x.u>>16 == ((u64)C32_TAG)<<32; }
 FORCE_INLINE bool q_c32(B x) { return isC32(x); }
 FORCE_INLINE bool q_N   (B x) { return x.u==bi_N.u; } // is ·
 FORCE_INLINE bool noFill(B x) { return x.u==bi_noFill.u; }
+FORCE_INLINE bool q_z(B x) { return x.u==bi_z.u; }
 
 
 NORETURN void expI_f64(f64 what); NORETURN void expI_B(B what);

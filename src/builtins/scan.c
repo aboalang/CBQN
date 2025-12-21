@@ -340,7 +340,7 @@ B scan_c1(Md1D* d, B x) { B f = d->f;
     if (rtid==n_or) { x=squeeze_numTry(x, &xe, SQ_ANY); if (xe==el_bit) return scan_or(x, ia); }
   }
   base:;
-  if (ia!=n && ia >= 6 * (u64)n && isPervasiveDy(f)) return scan_arith(f, m_f64(0), x, SH(x));
+  if (ia!=n && ia >= 6 * (u64)n && isPervasiveDy(f)) return scan_arith(f, bi_z, x, SH(x));
   SLOW2("𝕎` 𝕩", f, x);
   B xf = getFillR(x);
   

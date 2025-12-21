@@ -118,7 +118,7 @@ Body* m_body(i32 vam, i32 pos, u32 maxStack, u16 maxPSC) {
   
   #if JIT_START != -1
     body->nvm = NULL;
-    body->nvmRefs = m_f64(0);
+    body->nvmRefs = bi_z;
   #endif
   #if JIT_START > 0
     body->callCount = 0;
@@ -479,7 +479,7 @@ NOINLINE Block* compileAll(B bc_obj, B objs, B allBlocks, B allBodies, B indices
   HArr* objArr = (HArr*)cpyHArr(objs);
   comp->objs = objArr;
   usz objAm = PIA(objArr);
-  for (usz i = 0; i < objAm; i++) { B* c=objArr->a+i; B v=*c; *c=m_f64(0); *c = squeeze_deep(v); }
+  for (usz i = 0; i < objAm; i++) { B* c=objArr->a+i; B v=*c; *c=bi_z; *c = squeeze_deep(v); }
   
   if (!q_N(src) && !q_N(indices)) {
     if (isAtm(indices) || RNK(indices)!=1 || IA(indices)!=2) thrM("VM compiler: Bad indices");

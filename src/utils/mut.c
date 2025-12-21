@@ -128,7 +128,7 @@ NOINLINE JoinFillslice fillslice_getJoin(B w, usz ria) {
   value_free((Value*)s);
   return (JoinFillslice){w2, rp};
   
-  no: return (JoinFillslice){m_f64(0), NULL};
+  no: return (JoinFillslice){bi_z, NULL};
 }
 
 

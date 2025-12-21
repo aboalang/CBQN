@@ -1604,11 +1604,11 @@ B sys_c1(B t, B x) {
   B args = COMPS_CREF(args);
   
   #define CACHED(F) F(fileNS)F(path)F(wdpath)F(bqn)F(rebqn)
-  #define F(X) B X = m_f64(0);
+  #define F(X) B X = bi_z;
   CACHED(F)
   #undef F
   
-  #define CACHE_OBJ(NAME, COMP) ({ if (!NAME.u) NAME = (COMP); NAME; })
+  #define CACHE_OBJ(NAME, COMP) ({ if (q_z(NAME)) NAME = (COMP); NAME; })
   #define REQ_PATH CACHE_OBJ(path, q_N(path0)? bi_N : path_abs(incG(path0)))
   
   M_HARR(r, IA(x))

@@ -276,8 +276,8 @@ void fprint_fmt(FILE* f, char* p, ...);
 
 // function stuff
 
-#define C1_0(F,  X) F##_c1(m_f64(0),  X)
-#define C2_0(F,W,X) F##_c2(m_f64(0),W,X)
+#define C1_0(F,  X) F##_c1(bi_z,  X)
+#define C2_0(F,W,X) F##_c2(bi_z,W,X)
 #define C1(F,  X) C1_0(F,  X)
 #define C2(F,W,X) C2_0(F,W,X)
 

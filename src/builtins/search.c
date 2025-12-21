@@ -84,8 +84,8 @@ extern B select_c2(B,B,B);
 
 B asNormalized(B x, usz n, bool nanBad);
 SHOULD_INLINE bool canCompare64_norm2(B* w, usz wia, B* x, usz xia) {
-  B wn=asNormalized(*w,wia,true); if (wn.u == m_f64(0).u) return 0; *w=wn;
-  B xn=asNormalized(*x,xia,true); if (xn.u == m_f64(0).u) return 0; *x=xn;
+  B wn=asNormalized(*w,wia,true); if (q_z(wn)) return 0; *w=wn;
+  B xn=asNormalized(*x,xia,true); if (q_z(xn)) return 0; *x=xn;
   return 1;
 }
 
@@ -541,7 +541,7 @@ B count_c2(B t, B w, B x) {
 }
 #undef CHECK_CHRS_ELSE
 
-// if nanBad and input contains a NaN, doesn't consume and returns m_f64(0)
+// if nanBad and input contains a NaN, doesn't consume and returns bi_z
 // otherwise, consumes and returns an array with -0 (and NaNs if !nanBad) normalized
 B asNormalized(B x, usz n, bool nanBad) {
   f64* fp = f64any_ptr(x);
@@ -583,7 +583,7 @@ B asNormalized(B x, usz n, bool nanBad) {
   
   bad:
   if (r.u!=x.u) mm_free(v(r));
-  return m_f64(0);
+  return bi_z;
 }
 
 bool getRangeBool(void* xp, i64* res, u64 ia) {

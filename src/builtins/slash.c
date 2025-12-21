@@ -201,7 +201,7 @@ static B compress_grouped(u64* wp, B x, usz wia, usz wsum, u8 xt) { // expected 
       xp = tyany_ptr(x);
       rp = m_tyarrv(&r,width,wsum,xt);
     } else {
-      ONLY_GCC(r = m_f64(0);)
+      ONLY_GCC(r = bi_z;)
       usz ria = wsum*csz;
       
       xp = (u8*)arr_bptr(x);

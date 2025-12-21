@@ -25,7 +25,7 @@ B add_c1(B t, B x) {
   if (isF64(x)) return x;
   if (!isArr(x)) thrM("+𝕩: Argument must consist of numbers");
   if (elNum(TI(x,elType))) return x;
-  decG(eachm_fn(m_f64(0), incG(x), add_c1));
+  decG(eachm_fn(bi_z, incG(x), add_c1));
   return x;
 }
 #if SINGELI_SIMD

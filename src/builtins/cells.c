@@ -118,7 +118,7 @@ static B scan_cells_stride1(B f, B x, usz m) {
 }
 
 B scan_arith(B f, B w, B x, usz* xsh) { // Used by scan.c
-  bool has_w = w.u != m_f64(0).u;
+  bool has_w = !q_z(w);
   assert(isArr(x) && (!has_w || isArr(w)));
   ur xr = RNK(x);
   usz xn = xsh[0];
@@ -218,12 +218,12 @@ NOINLINE B leading_axis_arith(FC2 fc2, B w, B x, usz* wsh, usz* xsh, ur mr) { //
     assert(reusable(s) && RNK(s)==1);
     arr_shCopy(a(s), b);
     if (mr==wr) w=s; else x=s;
-    return fc2(m_f64(0), w, x);
+    return fc2(bi_z, w, x);
   } else {
     M_APD_SH_N(r, mr, bsh, cam);
     S_KSLICES(b, bsh, mr, cam, 1) usz bp=0;
-    if (mr==wr) { SGetU(w); for (usz i=0; i<cam; i++) APDD(r, fc2(m_f64(0), GetU(w,i), SLICEI(b))); }
-    else        { SGetU(x); for (usz i=0; i<cam; i++) APDD(r, fc2(m_f64(0), SLICEI(b), GetU(x,i))); }
+    if (mr==wr) { SGetU(w); for (usz i=0; i<cam; i++) APDD(r, fc2(bi_z, GetU(w,i), SLICEI(b))); }
+    else        { SGetU(x); for (usz i=0; i<cam; i++) APDD(r, fc2(bi_z, SLICEI(b), GetU(x,i))); }
     decG(w); decG(x);
     return taga(APD_SH_GET(r, 0));
   }
@@ -631,7 +631,7 @@ B cell_c1(Md1D* d, B x) { B f = d->f;
 }
 B rank_c1(Md2D* d, B x) { B f = d->f; B g = d->g;
   f64 kf;
-  B gi = m_f64(0);
+  B gi = bi_z;
   if (RARE(isFun(g))) gi = g = c1iX(g, x);
   if (LIKELY(isNum(g))) {
     kf = req_whole(o2fG(g));
@@ -884,7 +884,7 @@ NOINLINE B for_cells_AA(B f, B w, B x, ur wcr, ur xcr, u32 chr) { // w FâŽ‰wcrâ€
 
 B rank_c2(Md2D* d, B w, B x) { B f = d->f; B g = d->g;
   f64 wf, xf;
-  B gi = m_f64(0);
+  B gi = bi_z;
   if (RARE(isFun(g))) gi = g = c2iWX(g, w, x);
   if (LIKELY(isNum(g))) {
     wf = xf = req_whole(o2fG(g));

@@ -585,7 +585,7 @@ void load_init() { // very last init function
     
     B load_comp;
     #if ONLY_NATIVE_COMP
-      load_comp = m_f64(0);
+      load_comp = bi_z;
     #else
       B prevAsrt = runtime[n_asrt];
       runtime[n_asrt] = bi_casrt; // horrible but GC is off so it's fiiiiiine
@@ -736,10 +736,10 @@ static B funBI_imRt(B t,      B x) { return c1(c(BFn, t)->rtInvReg,     x); }
 static B funBI_isRt(B t,      B x) { return c1(c(BFn, t)->rtInvSwap,    x); }
 static B funBI_iwRt(B t, B w, B x) { return c2(c(BFn, t)->rtInvSwap, w, x); }
 static B funBI_ixRt(B t, B w, B x) { return c2(c(BFn, t)->rtInvReg,  w, x); }
-static B funBI_imInit(B t,      B x) { B f=c(BFn,t)->rtInvReg;  if(f.u==0) f=c(BFn,t)->rtInvReg =c1rt(invFnReg,  incG(t)); c(BFn,t)->im=funBI_imRt; return c1(f, x); }
-static B funBI_isInit(B t,      B x) { B f=c(BFn,t)->rtInvSwap; if(f.u==0) f=c(BFn,t)->rtInvSwap=c1rt(invFnSwap, incG(t)); c(BFn,t)->is=funBI_isRt; return c1(f, x); }
-static B funBI_ixInit(B t, B w, B x) { B f=c(BFn,t)->rtInvReg;  if(f.u==0) f=c(BFn,t)->rtInvReg =c1rt(invFnReg,  incG(t)); c(BFn,t)->ix=funBI_ixRt; return c2(f, w, x); }
-static B funBI_iwInit(B t, B w, B x) { B f=c(BFn,t)->rtInvSwap; if(f.u==0) f=c(BFn,t)->rtInvSwap=c1rt(invFnSwap, incG(t)); c(BFn,t)->iw=funBI_iwRt; return c2(f, w, x); }
+static B funBI_imInit(B t,      B x) { B f=c(BFn,t)->rtInvReg;  if(q_z(f)) f=c(BFn,t)->rtInvReg =c1rt(invFnReg,  incG(t)); c(BFn,t)->im=funBI_imRt; return c1(f, x); }
+static B funBI_isInit(B t,      B x) { B f=c(BFn,t)->rtInvSwap; if(q_z(f)) f=c(BFn,t)->rtInvSwap=c1rt(invFnSwap, incG(t)); c(BFn,t)->is=funBI_isRt; return c1(f, x); }
+static B funBI_ixInit(B t, B w, B x) { B f=c(BFn,t)->rtInvReg;  if(q_z(f)) f=c(BFn,t)->rtInvReg =c1rt(invFnReg,  incG(t)); c(BFn,t)->ix=funBI_ixRt; return c2(f, w, x); }
+static B funBI_iwInit(B t, B w, B x) { B f=c(BFn,t)->rtInvSwap; if(q_z(f)) f=c(BFn,t)->rtInvSwap=c1rt(invFnSwap, incG(t)); c(BFn,t)->iw=funBI_iwRt; return c2(f, w, x); }
 
 
 void* m_customObj(u64 size, V2v visit, V2v freeO) {
@@ -768,8 +768,8 @@ static NOINLINE B m_bfn(FC1 c1, FC2 c2, u8 nid) {
   f->iw = funBI_iwInit;
   f->ix = funBI_ixInit;
   f->is = funBI_isInit;
-  f->rtInvReg  = m_f64(0);
-  f->rtInvSwap = m_f64(0);
+  f->rtInvReg  = bi_z;
+  f->rtInvSwap = bi_z;
   B r = tag(f,FUN_TAG); gc_add(r);
   return r;
 }
