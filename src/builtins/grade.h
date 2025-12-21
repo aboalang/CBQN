@@ -477,37 +477,38 @@ B GRADE_CAT(c2)(B t, B w, B x) {
     FL_SET(w, fl);
   }
   
+  ux idxOfMax = GRADE_UD(wia-1, 0);
   #if SINGELI
-  B mult = bi_N;
+  B mult = bi_z;
   #endif
   
   if (LIKELY(we<el_B & xe<el_B)) {
     if (elNum(we)) {
       if (elNum(xe)) {
         if (RARE(we==el_bit | xe==el_bit)) goto bit_cases;
-        if (we==el_f64 && q_nan(IGetU(w,GRADE_UD(wia-1, 0)))) goto gen;
+        if (we==el_f64 && q_nan(IGetU(w,idxOfMax))) goto generic;
         goto nums;
-      } else {
+      } else { // num F chr
         ra = GRADE_UD(reshape_one(xia, m_f64(wia)), allZeroesFl(xia));
         goto copysh_done;
       }
-    } else { // w is character
-      if (elNum(xe)) {
+    } else { // chr F x
+      if (elNum(xe)) { // chr F num
         ra = GRADE_UD(allZeroesFl(xia), reshape_one(xia, m_f64(wia)));
         goto copysh_done;
       }
-      
+      // chr F chr
       we = el_c32;
       w=toC32Any(w); x=toC32Any(x);
       goto signed32;
     }
   } else {
-    goto gen;
+    goto generic;
   }
   
   
   
-  if (0) gen: {
+  if (0) generic: {
     i32* rp; r = m_i32arrc(&rp, x);
     SLOW2("𝕨"GRADE_CHR"𝕩", w, x);
     SGetU(w) SGetU(x)
@@ -551,7 +552,7 @@ B GRADE_CAT(c2)(B t, B w, B x) {
     #if SINGELI
       #define WIDEN(E, X) switch (E) { default:UD; case el_i16:X=toI16Any(X);break; case el_i32:X=toI32Any(X);break; case el_f64:X=toF64Any(X);break; }
       if (xe > we) {
-        if (xia/4 < wia) { // Narrow x
+        if (HEURISTIC(xia/4 < wia)) { // Narrow x
           assert(el_i8 <=we && we<=el_i32);
           assert(el_i16<=xe && xe<=el_f64);
           i32 pre = (i32) (U32_MAX << ((8<<(we-el_i8))-1));
@@ -570,25 +571,28 @@ B GRADE_CAT(c2)(B t, B w, B x) {
           WIDEN(xe, w)
           we = xe;
         }
+      } else {
+        if (we > xe) WIDEN(we, x)
       }
-      if (we > xe) WIDEN(we, x)
-      #undef WIDEN
       goto signed_matching;
+      #undef WIDEN
     #else
-      if (!elInt(we) | !elInt(xe)) goto gen;
+      if (!elInt(we) | !elInt(xe)) goto generic;
+      we = el_i32;
       w=toI32Any(w); x=toI32Any(x);
       goto signed32;
     #endif
   }
   
   if (0) signed32: {
+    assert(we==el_c32 || we==el_i32);
     #if SINGELI
       signed_matching:;
       u8 k = elwByteLog(we);
       u8 rl = wia<128 ? 0 : wia<(1<<15) ? 1 : wia<(1U<<31) ? 2 : 3;
       void *rp = m_tyarrc(&r, 1<<rl, x, el2t(el_i8+rl));
       si_bins[k*2 + GRADE_UD(0,1)](tyany_ptr(w), wia, tyany_ptr(x), xia, rp, rl);
-      if (!q_N(mult)) r = C2(mul, mult, r);
+      if (!q_z(mult)) r = C2(mul, mult, r);
     #else
       i32* rp; r = m_i32arrc(&rp, x);
       i32* wi = tyany_ptr(w);
