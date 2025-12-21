@@ -476,66 +476,17 @@ B GRADE_CAT(c2)(B t, B w, B x) {
     if (!CAT(isSorted,GRADE_UD(Up,Down))(w)) thrM("𝕨"GRADE_CHR"𝕩: 𝕨 must be sorted"GRADE_UD(," in descending order"));
     FL_SET(w, fl);
   }
-
+  
+  #if SINGELI
+  B mult = bi_N;
+  #endif
+  
   if (LIKELY(we<el_B & xe<el_B)) {
-    #if SINGELI
-    B mult = bi_N;
-    #endif
     if (elNum(we)) {
       if (elNum(xe)) {
-        if (RARE(we==el_bit | xe==el_bit)) {
-          if (we==el_bit) {
-            usz c1 = CAT(bit_boundary,GRADE_UD(up,dn))(bitany_ptr(w), wia);
-            decG(w); // c1 and wia contain all information in w
-            if (xe==el_bit) {
-              r = bit_sel(x, m_f64(GRADE_UD(c1,wia)), m_f64(GRADE_UD(wia,c1)));
-            } else {
-              i8* bp; B b01 = m_i8arrv(&bp, 2);
-              GRADE_UD(bp[0]=0; bp[1]=1;, bp[0]=1; bp[1]=0;)
-              B i = C2(GRADE_NAME, b01, x);
-              f64* c; B rw = m_f64arrv(&c, 3); c[0]=0; c[1]=c1; c[2]=wia;
-              r = C2(select, i, squeeze_numNewTy(el_f64,rw));
-            }
-          } else { // xe==el_bit: 2-element lookup table
-            i8* bp; B b01 = m_i8arrv(&bp, 2); bp[0]=0; bp[1]=1;
-            B i = C2(GRADE_NAME, w, b01);
-            SGetU(i)
-            r = bit_sel(x, GetU(i,0), GetU(i,1));
-            decG(i);
-          }
-          return r;
-        }
-        if (we==el_f64 && q_nan(IGetU(w,GRADE_UD(wia-1,0)))) goto gen;
-        
-        #if SINGELI
-        #define WIDEN(E, X) switch (E) { default:UD; case el_i16:X=toI16Any(X);break; case el_i32:X=toI32Any(X);break; case el_f64:X=toF64Any(X);break; }
-        if (xe > we) {
-          if (xia/4 < wia) { // Narrow x
-            assert(el_i8 <=we && we<=el_i32);
-            assert(el_i16<=xe && xe<=el_f64);
-            i32 pre = (i32) (U32_MAX << ((8<<(we-el_i8))-1));
-            pre = GRADE_UD(pre,-1-pre); // Smallest value of w's type
-            i32 w0 = o2iG(IGetU(w,0));
-            // Saturation is correct except it can move low values past
-            // pre. Post-adjust with mult×r
-            if (w0 == pre) mult = C2(LE_FN, m_i32(pre), incG(x));
-            // Narrow x with saturating conversion
-            B xn; void *xp = m_tyarrc(&xn, elWidth(we), x, el2t(we));
-            u8 ind = xe<el_f64 ? (we-el_i8)+(xe-el_i16)
-                   : 3 + 2*(we-el_i8) + GRADE_UD(0,1);
-            si_saturate[ind](xp, tyany_ptr(x), xia);
-            decG(x); x = xn;
-          } else {
-            WIDEN(xe, w)
-            we = xe;
-          }
-        }
-        if (we > xe) WIDEN(we, x)
-        #undef WIDEN
-        #else
-        if (!elInt(we) | !elInt(xe)) goto gen;
-        w=toI32Any(w); x=toI32Any(x);
-        #endif
+        if (RARE(we==el_bit | xe==el_bit)) goto bit_cases;
+        if (we==el_f64 && q_nan(IGetU(w,GRADE_UD(wia-1, 0)))) goto gen;
+        goto nums;
       } else {
         ra = GRADE_UD(reshape_one(xia, m_f64(wia)), allZeroesFl(xia));
         goto copysh_done;
@@ -548,27 +499,15 @@ B GRADE_CAT(c2)(B t, B w, B x) {
       
       we = el_c32;
       w=toC32Any(w); x=toC32Any(x);
+      goto signed32;
     }
-
-    #if SINGELI
-    u8 k = elwByteLog(we);
-    u8 rl = wia<128 ? 0 : wia<(1<<15) ? 1 : wia<(1U<<31) ? 2 : 3;
-    void *rp = m_tyarrc(&r, 1<<rl, x, el2t(el_i8+rl));
-    si_bins[k*2 + GRADE_UD(0,1)](tyany_ptr(w), wia, tyany_ptr(x), xia, rp, rl);
-    if (!q_N(mult)) r = C2(mul, mult, r);
-    #else
-    i32* rp; r = m_i32arrc(&rp, x);
-    i32* wi = tyany_ptr(w);
-    i32* xi = tyany_ptr(x);
-    for (usz i = 0; i < xia; i++) {
-      i32 c = xi[i];
-      i32 *s = wi-1;
-      for (usz l = wia+1, h; (h=l/2)>0; l-=h) { i32* m = s+h; if (!(c LT *m)) s = m; }
-      rp[i] = s - (wi-1);
-    }
-    #endif
   } else {
-    gen:;
+    goto gen;
+  }
+  
+  
+  
+  if (0) gen: {
     i32* rp; r = m_i32arrc(&rp, x);
     SLOW2("𝕨"GRADE_CHR"𝕩", w, x);
     SGetU(w) SGetU(x)
@@ -582,15 +521,96 @@ B GRADE_CAT(c2)(B t, B w, B x) {
       }
       rp[i] = s;
     }
+    goto done;
   }
   
-  done:
-  decG(w);decG(x);
-  return r;
+  if (0) bit_cases: {
+    if (we==el_bit) {
+      usz c1 = CAT(bit_boundary,GRADE_UD(up,dn))(bitany_ptr(w), wia);
+      decG(w); // c1 and wia contain all information in w
+      if (xe==el_bit) {
+        r = bit_sel(x, m_f64(GRADE_UD(c1,wia)), m_f64(GRADE_UD(wia,c1)));
+      } else {
+        i8* bp; B b01 = m_i8arrv(&bp, 2);
+        GRADE_UD(bp[0]=0; bp[1]=1;, bp[0]=1; bp[1]=0;)
+        B i = C2(GRADE_NAME, b01, x);
+        f64* c; B rw = m_f64arrv(&c, 3); c[0]=0; c[1]=c1; c[2]=wia;
+        r = C2(select, i, squeeze_numNewTy(el_f64,rw));
+      }
+    } else { // xe==el_bit: 2-element lookup table
+      i8* bp; B b01 = m_i8arrv(&bp, 2); bp[0]=0; bp[1]=1;
+      B i = C2(GRADE_NAME, w, b01);
+      SGetU(i)
+      r = bit_sel(x, GetU(i,0), GetU(i,1));
+      decG(i);
+    }
+    return r;
+  }
   
-  copysh_done:;
-  r = taga(arr_shCopy(ra, x));
-  goto done;
+  if (0) nums: {
+    #if SINGELI
+      #define WIDEN(E, X) switch (E) { default:UD; case el_i16:X=toI16Any(X);break; case el_i32:X=toI32Any(X);break; case el_f64:X=toF64Any(X);break; }
+      if (xe > we) {
+        if (xia/4 < wia) { // Narrow x
+          assert(el_i8 <=we && we<=el_i32);
+          assert(el_i16<=xe && xe<=el_f64);
+          i32 pre = (i32) (U32_MAX << ((8<<(we-el_i8))-1));
+          pre = GRADE_UD(pre,-1-pre); // Smallest value of w's type
+          i32 w0 = o2iG(IGetU(w,0));
+          // Saturation is correct except it can move low values past
+          // pre. Post-adjust with mult×r
+          if (w0 == pre) mult = C2(LE_FN, m_i32(pre), incG(x));
+          // Narrow x with saturating conversion
+          B xn; void *xp = m_tyarrc(&xn, elWidth(we), x, el2t(we));
+          u8 ind = xe<el_f64 ? (we-el_i8)+(xe-el_i16)
+                 : 3 + 2*(we-el_i8) + GRADE_UD(0,1);
+          si_saturate[ind](xp, tyany_ptr(x), xia);
+          decG(x); x = xn;
+        } else {
+          WIDEN(xe, w)
+          we = xe;
+        }
+      }
+      if (we > xe) WIDEN(we, x)
+      #undef WIDEN
+      goto signed_matching;
+    #else
+      if (!elInt(we) | !elInt(xe)) goto gen;
+      w=toI32Any(w); x=toI32Any(x);
+      goto signed32;
+    #endif
+  }
+  
+  if (0) signed32: {
+    #if SINGELI
+      signed_matching:;
+      u8 k = elwByteLog(we);
+      u8 rl = wia<128 ? 0 : wia<(1<<15) ? 1 : wia<(1U<<31) ? 2 : 3;
+      void *rp = m_tyarrc(&r, 1<<rl, x, el2t(el_i8+rl));
+      si_bins[k*2 + GRADE_UD(0,1)](tyany_ptr(w), wia, tyany_ptr(x), xia, rp, rl);
+      if (!q_N(mult)) r = C2(mul, mult, r);
+    #else
+      i32* rp; r = m_i32arrc(&rp, x);
+      i32* wi = tyany_ptr(w);
+      i32* xi = tyany_ptr(x);
+      for (usz i = 0; i < xia; i++) {
+        i32 c = xi[i];
+        i32 *s = wi-1;
+        for (usz l = wia+1, h; (h=l/2)>0; l-=h) { i32* m = s+h; if (!(c LT *m)) s = m; }
+        rp[i] = s - (wi-1);
+      }
+    #endif
+    goto done;
+  }
+  
+  if (0) {
+    copysh_done:;
+    r = taga(arr_shCopy(ra, x));
+    
+    done:
+    decG(w);decG(x);
+    return r;
+  }
 }
 #undef GRADE_CHR
 #undef LE_FN
