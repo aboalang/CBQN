@@ -237,8 +237,8 @@ static B modint_AS(B w,   B xv) { return modint_AA(w, C2(shape, C1(fne, incG(w))
       bool both = bit_has(bp, ia, !b0);
       
       B e0=m_f64(0), e1=m_f64(0); // initialized to have something to decrement later
-      bool h0=both || b0==0; if (h0) e0 = bitX? f(bi_N, inc(w), m_f64(0)) : f(bi_N, m_f64(0), inc(x));
-      bool h1=both || b0==1; if (h1) e1 = bitX? f(bi_N,     w,  m_f64(1)) : f(bi_N, m_f64(1), x);
+      bool h0=both || b0==0; if (h0) e0 = bitX? f(bi_N, w, m_f64(0)) : f(bi_N, m_f64(0), x);
+      bool h1=both || b0==1; if (h1) e1 = bitX? f(bi_N, w, m_f64(1)) : f(bi_N, m_f64(1), x);
       // non-bitarr arg has been consumed
       B r = bit_sel(b, e0, e1); // and now the bitarr arg is consumed too
       dec(e0); dec(e1);
