@@ -313,7 +313,9 @@ fn write{T,k}(r:*void, i:u64, ...vs:k**u64) : void = {
 def wr_arrs = each{{k} => rtype_arr{{T} => write{T,k}}, unroll_sizes}
 
 def bin_search_branchless{up, w, wn, x, n, res, rtype} = {
-  def lt = if (up) <; else >
+  # BQN-total-comparison, assuming x isn't NaN (w can be)
+  def ge{w, x if     up} = ~(w<x)
+  def ge{w, x if not up} = w<=x
   ws := w - 1
   l0 := wn + 1
   # Take a list of indices in x/res to allow unrolling
@@ -323,7 +325,7 @@ def bin_search_branchless{up, w, wn, x, n, res, rtype} = {
     l := l0; h := undefined{u64}  # Interval size l, same for all values
     while ((h=l/2) > 0) {
       # Branchless update
-      def bin1{s, x, m} = { if (not lt{x, load{m}}) s = m }
+      def bin1{s, x, m} = { if (ge{x, load{m}}) s = m }
       each{bin1, ss, xs, each{bind{+,h}, ss}}
       l -= h
     }
