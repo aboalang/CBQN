@@ -57,9 +57,13 @@ static bool q_nan(B x) {
 #define GRADE_UD(U,D) D
 #include "grade.h"
 
+GLOBAL B int2x[2]; // ⟨0‿1 ⋄ 1‿0⟩ as i8 arrays
 void sort_init() {
   #if SINGELI_SIMD
     is_sorted[el_bit] = bit_isSorted;
     for (ux i = el_i8; i <= el_c32; i++) is_sorted[i] = si_is_sorted[i-el_i8];
   #endif
+  
+  { i8* p; B a=m_i8arrv(&p, 2); p[0]=0; p[1]=1; int2x[0] = a; gc_add(a); }
+  { i8* p; B a=m_i8arrv(&p, 2); p[0]=1; p[1]=0; int2x[1] = a; gc_add(a); }
 }

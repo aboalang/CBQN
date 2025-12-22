@@ -274,7 +274,8 @@ B SORT_C1(B t, B x) {
 
 
 extern GLOBAL Arr* bitUD[3]; // from fns.c
-extern GLOBAL B bit2x[2];
+extern GLOBAL B bit2x[2]; // from fns.c
+extern GLOBAL B int2x[2]; // from sort.c
 extern B grade_bool(B x, usz ia, bool up); // slash.c
 
 #define GRADE_CHR GRADE_UD("⍋","⍒")
@@ -532,15 +533,12 @@ B GRADE_CAT(c2)(B t, B w, B x) {
       if (xe==el_bit) {
         r = bit_sel(x, m_f64(GRADE_UD(c1,wia)), m_f64(GRADE_UD(wia,c1)));
       } else {
-        i8* bp; B b01 = m_i8arrv(&bp, 2);
-        GRADE_UD(bp[0]=0; bp[1]=1;, bp[0]=1; bp[1]=0;)
-        B i = C2(GRADE_NAME, b01, x);
+        B i = C2(GRADE_NAME, incG(int2x[GRADE_UD(0,1)]), x);
         f64* c; B rw = m_f64arrv(&c, 3); c[0]=0; c[1]=c1; c[2]=wia;
         r = C2(select, i, squeeze_numNewTy(el_f64,rw));
       }
     } else { // xe==el_bit: 2-element lookup table
-      i8* bp; B b01 = m_i8arrv(&bp, 2); bp[0]=0; bp[1]=1;
-      B i = C2(GRADE_NAME, w, b01);
+      B i = C2(GRADE_NAME, w, incG(int2x[0]));
       SGetU(i)
       r = bit_sel(x, GetU(i,0), GetU(i,1));
       decG(i);
