@@ -180,6 +180,11 @@ static void gcv2_unmark_visit(Value* x) {
   }
 #endif
 
+static void gc_preGC(bool toplevel) {
+  if (gc_running) fatal("starting GC while GC is in the middle of running");
+  if (toplevel && !q_N(thrownMsg)) fatal("starting GC while in the middle of processing a thrown error");
+}
+
 GLOBAL u64 gc_lastGCUsed[2]; // 0: any; 1: top-level
 GLOBAL bool gc_running;
 void gc_forceGC(bool toplevel) {
@@ -187,7 +192,7 @@ void gc_forceGC(bool toplevel) {
     #if TOPLEVEL_GC
       run_countdown = 1; // make sure that, if this (possibly-non-toplevel) GC is ineffective, toplevel GC gets a guaranteed chance to run at the nearest possible time
     #endif
-    if (gc_running) fatal("starting GC while GC is in the middle of running");
+    gc_preGC(toplevel);
     gc_running = 1;
     u64 startTime=0, startSize=0;
     if (gc_log_enabled) {
@@ -219,6 +224,9 @@ void gc_forceGC(bool toplevel) {
 }
 
 NOINLINE bool gc_maybeGC(bool toplevel) {
+  #if DEBUG
+    gc_preGC(toplevel);
+  #endif
   if (gc_depth) return false;
   u64 used = tot_heapUsed();
   if (used > gc_lastGCUsed[toplevel]*2) {

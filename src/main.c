@@ -1054,8 +1054,7 @@ int main(int argc, char* argv[]) {
         args = HARR_FV(ap);
       }
       
-      RUN_START;
-      if (CATCH) { RUN_END; rethrow(); }
+      RUN_START; // top-level in main(), don't need to catch
       
       B execRes;
       if (execStdin) {
