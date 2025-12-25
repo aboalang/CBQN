@@ -1744,6 +1744,7 @@ NOINLINE NORETURN void throwImpl(bool rethrow) {
 }
 
 NOINLINE NORETURN void thr(B msg) {
+  debug_assert(!q_N(msg));
   thrownMsg = msg;
   throwImpl(false);
 }
