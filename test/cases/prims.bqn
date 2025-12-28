@@ -105,9 +105,9 @@ w←1‿1⥊1 ⋄ x←2⥊1 ⋄ w‿x <¨↩   ⋄ {! (∾⟨"𝕨",•Repr𝕩,
 !"Expected non-negative integer, got ¯1000" % (4/1000‿¯1000) / 8⥊1
 !"Integer out of range: 4e19" % %USE evar ⋄ 2‿4e19 /_evar ↕2
 
-!"𝕨/𝕩: Length of compound 𝕨 must be at most rank of 𝕩" % ⟨↕1⟩/3
-!"𝕨/𝕩: Length of compound 𝕨 must be at most rank of 𝕩" % ⟨↕1⟩/<"ab"
-!"𝕨/𝕩: Length of compound 𝕨 must be at most rank of 𝕩" % (<↕1)/<"ab"
+!"𝕨/𝕩: 𝕩 must have rank at least 1 for simple 𝕨" % ⟨↕1⟩/3
+!"𝕨/𝕩: 𝕩 must have rank at least 1 for simple 𝕨" % ⟨↕1⟩/<"ab"
+!"𝕨/𝕩: 𝕩 must have rank at least 1 for simple 𝕨" % (<↕1)/<"ab"
 !"𝕨/𝕩: Length of compound 𝕨 must be at most rank of 𝕩" % (<↕0)/<"ab"
 !"𝕨/𝕩: Length of compound 𝕨 must be at most rank of 𝕩" % ⟨↕10,↕10⟩ / 10⥊10
 !"𝕨/𝕩: Length of compound 𝕨 must be at most rank of 𝕩" % ⟨↕10,↕10,<0⟩ / 10‿10⥊10

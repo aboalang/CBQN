@@ -625,7 +625,14 @@ B slash_c2(B t, B w, B x) {
     we = TI(w,elType);
     if (!elInt(we)) {
       w = squeeze_numTry(w, &we, SQ_MSGREQ(SQ_NUM));
-      if (!elNum(we)) goto base;
+      if (!elNum(we)) {
+        // Check for ⟨num⟩/𝕩
+        if (!(RNK(w)<=1 && IA(w)==1)) goto base;
+        B e = IGetU(w,0);
+        if (isArr(e) && (!elNum(TI(e,elType)) || IA(e)==0)) goto base;
+        inc(e); decG(w);
+        return slash_c2(t, e, x);
+      }
     }
     ur wr = RNK(w);
     if (wr>1) thrF("𝕨/𝕩: Simple 𝕨 must have rank 0 or 1 (%i≡=𝕨)", wr);
