@@ -379,10 +379,16 @@ static B group_simple(B w, B x, ur xr, usz wia, usz xn, usz* xsh, u8 we) {
 extern GLOBAL B rt_group;
 B group_c2(B t, B w, B x) {
   if (isAtm(x)) thrM("𝕨⊔𝕩: 𝕩 must be an array");
-  ur xr = RNK(x);
-  if (isArr(w) && RNK(w)==1 && xr>=1) {
+  ur xr = RNK(x), wr;
+  if (isArr(w) && (wr=RNK(w))==1 && xr>=1) {
     u8 we = TI(w,elType);
     if (!elInt(we)) w = squeeze_numTry(w, &we, SQ_ANY);
+    if (!elNum(we) && wr==1 && IA(w)==1) { // Check for ⟨int⟩⊔𝕩
+      B e = IGetU(w,0);
+      if (isArr(e) && elInt(TI(e,elType)) && (wr=RNK(e))<=xr) {
+        inc(e); decG(w); w = e; we = TI(w,elType);
+      }
+    }
     if (elInt(we)) {
       usz wia = IA(w);
       usz* xsh = SH(x);
