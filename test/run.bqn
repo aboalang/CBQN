@@ -254,6 +254,7 @@ helpers ← {
   }
   
   shouldNotError ⇐ o.noerr
+  slow ⇐ o.slow
   
   {o.heapverify? Indistinguishable↩EEqual; @}
   Classify ← {(≢𝕩)⥊ ⊐Indistinguishable⌜˜ ⥊𝕩}

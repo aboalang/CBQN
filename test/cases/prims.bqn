@@ -266,8 +266,6 @@ a←↕2 ⋄ ! "e" ≡ (↕10){b←a‿a‿a‿a‿a‿a‿a‿a‿a‿a ⋄ �
 !">𝕩: Incompatible element shapes (encountered shapes ⟨0⟩ and ⟨⟩)" % > ↕¨⟨0, ⟨⟩⟩
 !">𝕩: Incompatible element shapes (encountered shapes 2‿3 and ⟨⟩)" % > ↕¨⟨2‿3, ⟨⟩⟩
 !">𝕩: Incompatible element shapes (encountered shapes 4‿5 and 4‿6)" % ≢>2‿3⥊⟨4‿5⥊↕20,4‿6⥊↕1⟩
-!"∾𝕩: Item trailing shapes must be equal (contained arrays with shapes ⟨2⟩ and ⟨3⟩ and later higher-rank array)" % ∾⟨1‿1, 1‿1‿1, ⟨1⟩, 2‿2⥊1⟩
-!"∾𝕩: Item trailing shapes must be equal (contained arrays with shapes 1‿4 and ⟨0⟩)" % ∾⟨1‿4⥊"abcd",⟨⟩⟩
 >⟨<'a',1⟩ %% 'a'‿1
 >⟨1,2,<3,4,<<5⟩ %% ⟨1,2,3,4,<5⟩
 ≢>0‿1⥊<2‿3⥊<"ab" %% ↕4
@@ -296,11 +294,33 @@ a←↕2 ⋄ ! "e" ≡ (↕10){b←a‿a‿a‿a‿a‿a‿a‿a‿a‿a ⋄ �
 !"∾𝕩: Item ranks along an axis can differ by at most one (contained ranks 1 and 3 along axis 0)" % ∾2‿1 ⥊ ⥊⟜0¨ ⟨0‿2‿3, 0⟩
 !"∾𝕩: Incompatible item shapes (contained arrays with shapes 1‿0 and 1‿0 along axis 1)" % ∾ {1‿𝕩⥊0}¨ [0‿1, 0‿0]
 !"∾𝕩: Incompatible item ranks" % ∾ ⥊⟜0¨ [0‿1⋈0‿1, 0‿1⋈1]
+!"∾𝕩: Item trailing shapes must be equal (contained arrays with shapes ⟨2⟩ and ⟨3⟩ and later higher-rank array)" % ∾⟨1‿1, 1‿1‿1, ⟨1⟩, 2‿2⥊1⟩
+!"∾𝕩: Item trailing shapes must be equal (contained arrays with shapes 1‿4 and ⟨0⟩)" % ∾⟨1‿4⥊"abcd",⟨⟩⟩
 ∾3‿3⥊<1‿0‿3⥊0 %% 3‿0‿3⥊0
 ∾3‿3⥊<0‿0⥊⟨⟩ %% 0‿0⥊⟨⟩
 ⊑1↑⥊∾3‿3⥊<1‿0‿3⥊<"hi" %% "  "
 !"∾𝕩: Empty array 𝕩 cannot have an atom fill element" % ∾↕0 %PROPER_FILLS
 ∾⟨⟩ %% ⟨⟩
+!"∾𝕩: Item ranks in a list can differ by at most one (contained ranks 0 and 2)" % ∾⟨1,"ab",2‿2⥊'a'⟩
+(
+  rs ← 0‿1‿2‿3 ∾ 255-↕3
+  n ← 2‿3 ∾ {(⊑•args).slow? 4; ↕0}
+  as ← ⥊⟜1⍟2¨ rs
+  {
+    ranks ← 𝕩⊏rs
+    got ← 1∘∾⎊{𝕊:
+      ¬∧´0=ranks?
+      m ← •CurrentError@
+      fs ← •ParseFloat¨ ((¯1+⊢×·+`»⊸<) '0'⊸≤∧≤⟜'9')⊸⊔ m↓˜⋈⁼/"contained ranks" ⍷ m
+      ranks ! 2=≠fs
+      ranks ! 2≤|-´fs
+      ranks ! fs ≡ ⊑∾{∨´m←2≤|𝕩-l←¯1⊑𝕩? ⋈⟨{⊑𝕩⊏˜⍒|𝕩-l} m/𝕩,l⟩; ⟨⟩}¨ 2↓↑ ranks
+      0;0
+    } 𝕩⊏as
+    exp ← (∨´ranks≥1) ∧ 1≥|(⌈´-⌊´) ranks
+    𝕩 ! got ≡ exp
+  }¨ ∾{⥊↕𝕩⥊≠rs}¨ n
+)
 
 # 𝕨∾𝕩
 !"𝕨∾𝕩: Lengths not matchable (⟨6⟩ ≡ ≢𝕨, 1‿1 ≡ ≢𝕩)" % ("abc"∾"def")∾≍"a"

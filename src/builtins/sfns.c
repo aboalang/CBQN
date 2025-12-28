@@ -807,25 +807,30 @@ B join_c1(B t, B x) {
     for (usz i = 1; i < xia; i++) {
       B c = GetU(x, i);
       ur cr = isAtm(c) ? 0 : RNK(c);
+      char* const badRanks = "∾𝕩: Item ranks in a list can differ by at most one (contained ranks %i and %i)";
       if (cr == 0) {
-        if (rm > 1) thrF("∾𝕩: Item ranks in a list can differ by at most one (contained ranks %i and %i)", 0, rm);
+        if (rm > 1) thrF(badRanks, rm, 0);
         rd=rm; cam++;
       } else {
         usz* csh = SH(c);
         ur cd = rm - cr;
         if (RARE(cd > rd)) {
-          if ((ur)(cd+1-rd) > 2-rd) thrF("∾𝕩: Item ranks in a list can differ by at most one (contained ranks %i and %i)", rm-rd*(cr==rm), cr);
-          if (cr > rr) { // Previous elements were cells
-            assert(rd==0 && rr>0);
-            esh--;
-            usz l = *esh;
-            for (usz j=1; j<i; j++) {
-              B xj = GetU(x,j);
-              if (l != *SH(xj)) thrF("∾𝕩: Item trailing shapes must be equal (contained arrays with shapes %H and %H and later higher-rank array)", x0, xj);
+          if (cr <= rm) {
+            if (cd > 1) thrF(badRanks, rm, cr);
+          } else {
+            if (cr-1 > rm-rd) thrF(badRanks, rm-rd, cr);
+            rm = cr;
+            if (cr > rr) { // Previous elements were cells
+              assert(rd==0 && rr>0);
+              esh--;
+              usz l = *esh;
+              for (usz j=1; j<i; j++) {
+                B xj = GetU(x,j);
+                if (l != *SH(xj)) thrF("∾𝕩: Item trailing shapes must be equal (contained arrays with shapes %H and %H and later higher-rank array)", x0, xj);
+              }
+              rr=cr; cam=i;
             }
-            rr=cr; cam=i;
           }
-          rm = cr>rm ? cr : rm;
           rd = 1;
         }
         cam += cr < rm ? 1 : *csh++;
