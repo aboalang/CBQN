@@ -341,6 +341,13 @@ B transp_c2(B t, B w, B x) {
     arr_shSetUO(ra, rr, sh);
     r = taga(ra); goto ret;
   }
+  // Basic transpose
+  if (na==2 && dup==0 && csz==1) {
+    Arr* ra = transpose_noshape(&x, IA(x), rsh[0], rsh[1]);
+    arr_shSetUO(ra, rr, sh);
+    r = taga(ra);
+    decG(x); goto ret;
+  }
 
   u8 xe = TI(x,elType);
   #define AXIS_LOOP(N_AX, I_INC, DO_INNER) \
