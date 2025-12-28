@@ -176,7 +176,7 @@ NOINLINE B m_fvec1(B x) {
 FORCE_INLINE B m_oneItemArr(B x, ur rr) {
   assert(rr<=1);
   u64 data; assert(sizeof(f64)<=8);
-  u8 t; u64 sz;
+  u8 t; MAYBE_UNUSED u64 sz;
   if (isF64(x)) {
     i32 xi = (i32)x.f;
     if (RARE(xi!=x.f))    { f64 v=x.f; memcpy(&data, &v, sz=sizeof(v)); t=t_f64arr; }
