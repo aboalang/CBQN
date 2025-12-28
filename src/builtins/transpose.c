@@ -249,11 +249,6 @@ B ud_c1(B,B);
 B tbl_c2(Md1D*,B,B);
 B select_c2(B,B,B);
 
-static void shSet(Arr* ra, ur rr, ShArr* sh) {
-  if (RARE(rr <= 1)) arr_shVec(ra);
-  else arr_shSetUO(ra, rr, sh);
-}
-
 B transp_c2(B t, B w, B x) {
   usz wia=1;
   if (isArr(w)) {
@@ -302,6 +297,7 @@ B transp_c2(B t, B w, B x) {
 
   // Fill in remaining axes and check for missing ones
   ur rr = xr-dup;
+  assert(rr != 0); // result rank 0 is always an identity transpose, handled above
   if (max >= rr) thrF("𝕨⍉𝕩: Skipped result axis");
   if (wia<xr) for (usz j=0, i=wia; j<rr; j++) if (rsh[j]==no_sh) {
     p[i] = j;
@@ -318,7 +314,7 @@ B transp_c2(B t, B w, B x) {
   // Empty result
   if (IA(x) == 0) {
     Arr* ra = emptyWithFill(getFillR(x));
-    shSet(ra, rr, sh);
+    arr_shSetUO(ra, rr, sh);
     decG(x);
     r = taga(ra); goto ret;
   }
@@ -342,7 +338,7 @@ B transp_c2(B t, B w, B x) {
   // Turned out trivial
   if (na == 0) {
     Arr* ra = TI(x,slice)(x, 0, csz);
-    shSet(ra, rr, sh);
+    arr_shSetUO(ra, rr, sh);
     r = taga(ra); goto ret;
   }
 
@@ -375,7 +371,7 @@ B transp_c2(B t, B w, B x) {
     MAKE_MUT_INIT(rm, ria, xe); MUTG_INIT(rm);
     AXIS_LOOP(na, csz, mut_copyG(rm, i, x, j, csz));
     Arr* ra = mut_fp(rm);
-    shSet(ra, rr, sh);
+    arr_shSetUO(ra, rr, sh);
     r = withFill(taga(ra), getFillR(x));
     decG(x); goto ret;
   }
@@ -419,7 +415,7 @@ B transp_c2(B t, B w, B x) {
         }
       }
     }
-    shSet(ra, rr, sh);
+    arr_shSetUO(ra, rr, sh);
     r = taga(ra);
     decG(x); goto ret;
   }
