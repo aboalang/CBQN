@@ -33,6 +33,7 @@
   extern usz (**const si_count_sorted)(u8*, usz*, usz*, void*, usz);
 #endif
 
+extern B shape_c1(B, B);
 extern B ud_c1(B, B);
 extern B ne_c2(B, B, B);
 extern B slash_c1(B, B);
@@ -380,7 +381,7 @@ extern GLOBAL B rt_group;
 B group_c2(B t, B w, B x) {
   if (isAtm(x)) thrM("𝕨⊔𝕩: 𝕩 must be an array");
   ur xr = RNK(x), wr;
-  if (isArr(w) && (wr=RNK(w))==1 && xr>=1) {
+  if (isArr(w) && (wr=RNK(w))<=xr) {
     u8 we = TI(w,elType);
     if (!elInt(we)) w = squeeze_numTry(w, &we, SQ_ANY);
     if (!elNum(we) && wr==1 && IA(w)==1) { // Check for ⟨int⟩⊔𝕩
@@ -392,8 +393,27 @@ B group_c2(B t, B w, B x) {
     if (elInt(we)) {
       usz wia = IA(w);
       usz* xsh = SH(x);
-      usz xn = *xsh;
-      if (wia-(u64)xn > 1) thrF("𝕨⊔𝕩: ≠𝕨 must be either ≠𝕩 or one bigger (%s≡≠𝕨, %s≡≠𝕩)", wia, xn);
+      usz xn;
+      if (wr == 1) {
+        xn = *xsh;
+        if (wia-(u64)xn > 1) thrF("𝕨⊔𝕩: ≠𝕨 must be either ≠𝕩 or one bigger (%s≡≠𝕨, %s≡≠𝕩)", wia, xn);
+      } else {
+        usz* wsh = SH(w);
+        if (!eqShPart(wsh, xsh, wr)) thrF("𝕨⊔𝕩: Expected 𝕨's shape to be a prefix of 𝕩's (%H ≡ ≢𝕨, %H ≡ ≢𝕩)", w, x);
+        w = C1(shape, w);
+        xn = wia;
+        // Combine first wr axes of x
+        xr = 1 + xr-wr;
+        ShArr* zsh;
+        if (xr != 1) {
+          zsh = m_shArr(xr);
+          zsh->a[0] = xn; shcpy(zsh->a+1, xsh+wr, xr-1);
+        }
+        Arr* z = TI(x,slice)(x, 0, IA(x));
+        if (xr==1) arr_shVec(z); else arr_shSetUG(z, xr, zsh);
+        x = taga(z);
+        xsh = SH(x);
+      }
       return group_simple(w, x, xr, wia, xn, xsh, we);
     }
   }
