@@ -26,7 +26,11 @@ typedef ux Run;
       if (RARE(!--run_countdown)) run_slow();
     }
   }
+  static void run_pressure() {
+    run_countdown = 1;
+  }
 #else
   static Run run_start() { return 0; }
   static void run_end(Run e) { }
+  static void run_pressure() { }
 #endif

@@ -9,6 +9,7 @@
 #include "utils/utf.h"
 #include "utils/talloc.h"
 #include "utils/interrupt.h"
+#include "utils/toplevel.h"
 #include "load.h"
 #include <unistd.h>
 
@@ -1710,7 +1711,13 @@ void before_exit(void);
 NOINLINE NORETURN void throwImpl(bool rethrow) {
   // printf("gStack %p-%p:\n", gStackStart, gStack); B* c = gStack;
   // while (c>gStackStart) { printI(*--c); printf("\n"); } printf("gStack printed\n");
+  
   NOGC_CHECK("throwing during noAlloc");
+  
+  // throwing directly leaves wrong reference counts, so ensure toplevel GC handles them as soon as possible
+  // this alone ensures that the automatic counting of run_countdown is never strictly required for not infinitely leaking memory on repeated throw+run_end, although other invocations of run_pressure and/or the countdown can still help
+  run_pressure();
+  
   if (!rethrow) envPrevHeight = envCurr-envStart + 1;
 #if USE_SETJMP
   if (cf>cfStart) { // something wants to catch errors

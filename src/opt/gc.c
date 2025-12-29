@@ -190,7 +190,7 @@ GLOBAL bool gc_running;
 void gc_forceGC(bool toplevel) {
   #if ENABLE_GC
     #if TOPLEVEL_GC
-      run_countdown = 1; // make sure that, if this (possibly-non-toplevel) GC is ineffective, toplevel GC gets a guaranteed chance to run at the nearest possible time
+      run_pressure();
     #endif
     gc_preGC(toplevel);
     gc_running = 1;

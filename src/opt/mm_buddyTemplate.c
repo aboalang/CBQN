@@ -1,4 +1,5 @@
 #include "../utils/interrupt.h"
+#include "../utils/toplevel.h"
 #define AllocInfo BN(AllocInfo)
 #define buckets   BN(buckets)
 #define al        BN(al)
@@ -38,6 +39,7 @@ static NOINLINE void* BN(allocateMore)(ux bucket, u8 type, ux from, ux to) {
   if (from < (bucket&63)) from = bucket&63;
   u64 sz = BSZ(from);
   CHECK_INTERRUPT;
+  run_pressure();
   
   #if ALLOC_MODE==0 && ENABLE_GC
     if (gc_maybeGC(false)) goto alloc_rec;
