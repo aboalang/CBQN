@@ -1,6 +1,6 @@
 // First Cell and Select (⊏)
 
-// First Cell is just a slice
+// First Cell is just a slice, even if repeated (⊏⍟n𝕩, n>1)
 
 // Select - 𝕨 ⊏ 𝕩
 // Complications in Select mostly come from range checks and negative 𝕨
@@ -134,17 +134,32 @@ FORCE_INLINE void cf_call(CFRes f, void* r, ux rs, void* x, ux xs) {
 
 
 
+FORCE_INLINE B first_cell(ur dr, B x, ur xr, usz* xsh) {
+  usz ia = shProd(xsh, dr, xr);
+  Arr* r = TI(x,slice)(incG(x), 0, ia);
+  usz* sh = arr_shAlloc(r, xr-dr);
+  if (sh) shcpy(sh, xsh+dr, xr-dr);
+  decG(x);
+  return taga(r);
+}
 B select_c1(B t, B x) {
   if (isAtm(x)) thrM("⊏𝕩: 𝕩 cannot be an atom");
   ur xr = RNK(x);
   if (xr==0) thrM("⊏𝕩: 𝕩 cannot be rank 0");
-  if (SH(x)[0]==0) thrF("⊏𝕩: 𝕩 shape cannot start with 0 (%H ≡ ≢𝕩)", x);
-  usz ia = shProd(SH(x), 1, xr);
-  Arr* r = TI(x,slice)(incG(x), 0, ia);
-  usz* sh = arr_shAlloc(r, xr-1);
-  if (sh) shcpy(sh, SH(x)+1, xr-1);
-  decG(x);
-  return taga(r);
+  if (*SH(x)==0) thrF("⊏𝕩: 𝕩 shape cannot start with 0 (%H ≡ ≢𝕩)", x);
+  return first_cell(1, x, xr, SH(x));
+}
+B select_powm(i64 am, B x) {
+  assert(am > 1);
+  if (isAtm(x)) thrM("⊏𝕩: 𝕩 cannot be an atom");
+  ur xr = RNK(x);
+  usz* xsh = SH(x);
+  if (RARE(IA(x)==0)) {
+    ur dr = xr<am ? xr : am;
+    for (ur i=0; i<dr; i++) if (xsh[i]==0) thrF("⊏𝕩: 𝕩 shape cannot start with 0 (%2H ≡ ≢𝕩)", xr-i, xsh+i);
+  }
+  if (xr < am) thrM("⊏𝕩: 𝕩 cannot be rank 0");
+  return first_cell(am, x, xr, SH(x));
 }
 
 B select_c2(B t, B w, B x);

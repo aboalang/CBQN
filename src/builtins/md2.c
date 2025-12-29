@@ -95,17 +95,7 @@ NOINLINE B repeat_replaceR(B g, B* q) {
   for (usz i = 0; i < ia; i++) HARR_ADD(r, i, repeat_replace(GetU(g,i), q));
   return squeeze_any(HARR_FC(r, g));
 }
-#define REPEAT_T(CN, END, ...)                     \
-  B g = CN(d->g, __VA_ARGS__ inc(x));              \
-  B f = d->f;                                      \
-  if (isNum(g)) {                                  \
-    i64 am = o2i64(g);                             \
-    if (am>=0) {                                   \
-      for (i64 i = 0; i < am; i++) x = CN(f, __VA_ARGS__ x); \
-      END;                                         \
-      return x;                                    \
-    }                                              \
-  }                                                \
+#define REPEAT_GEN(CALL, END)                      \
   i64 bound[2] = {0,0};                            \
   repeat_bounds(bound, g);                         \
   i64 min=-(u64)bound[0]; i64 max=bound[1];        \
@@ -116,11 +106,11 @@ NOINLINE B repeat_replaceR(B g, B* q) {
   if (min) {                                       \
     B x2 = inc(x);                                 \
     B fi = m1_d(incG(bi_undo), inc(f));            \
-    for (i64 i = 0; i < min; i++) q[-1-i] = inc(x2 = CN(fi, __VA_ARGS__ x2)); \
+    for (i64 i = 0; i < min; i++) q[-1-i] = inc(x2 = CALL(fi, x2)); \
     dec(x2);                                       \
     dec(fi);                                       \
   }                                                \
-  for (i64 i = 0; i < max; i++) q[i+1] = inc(x = CN(f, __VA_ARGS__ x)); \
+  for (i64 i = 0; i < max; i++) q[i+1] = inc(x = CALL(f, x)); \
   dec(x);                                          \
   B r = repeat_replace(g, q);                      \
   dec(g);                                          \
@@ -128,8 +118,68 @@ NOINLINE B repeat_replaceR(B g, B* q) {
   END; TFREE(all);                                 \
   return r;
 
-B repeat_c1(Md2D* d,      B x) { REPEAT_T(c1,{}              ); }
-B repeat_c2(Md2D* d, B w, B x) { REPEAT_T(c2,dec(w), inc(w), ); }
+extern B couple_powm(i64, B);
+extern B select_powm(i64, B);
+extern B transp_powm(i64, B);
+extern B shift_powm(bool, i64, B);
+
+B repeat_c1(Md2D* d, B x) {
+  B g = c1(d->g, inc(x));
+  B f = d->f;
+  if (isNum(g)) {
+    i64 am = o2i64(g);
+    if ((u64)am <= 1) goto basic;
+    if (isFun(f)) { u8 rtid = RTID(f); switch (rtid) {
+      case n_ltack: case n_rtack:
+        am = 0; break;
+      case n_stile: case n_shape:
+      case n_indexOf: case n_find: case n_and: case n_or:
+        if (am > 1) am = 1; break;
+      case n_eq: case n_ne: case n_feq:
+        if (am > 2) am = 2; break;
+      case n_fne:
+        if (am > 3) am = 3; break;
+      case n_reverse:
+        am &= 1;
+        if (am==0 && (isAtm(x) || RNK(x)==0)) thrM("⌽𝕩: 𝕩 cannot be a unit");
+        break;
+      case n_sub: case n_add: { // 1 or 2 times needed in general to account for fills
+        i64 b = am & 1;
+        am = isArr(x)&&elNum(TI(x,elType)) ? b : 2-b;
+        } break;
+      case n_not: { // 2 or 3 times needed for floats (e.g. 9.007199254740994e15)
+        i64 b = am & 1;
+        am = isArr(x)&&elInt(TI(x,elType)) ? b : am==-1 ? -1 : 2+b;
+        } break;
+      case n_couple: return couple_powm(am, x);
+      case n_select: if (am<0) goto gen; return select_powm(am, x);
+      case n_transp: return transp_powm(am, x);
+      case n_shiftb: case n_shifta:
+        if (am<0) goto gen; return shift_powm(rtid==n_shifta, am, x);
+    }}
+    if (am < 0) goto gen;
+    basic:;
+    for (i64 i = 0; i < am; i++) x = c1(f, x);
+    return x;
+  }
+  gen:;
+  REPEAT_GEN(c1, {});
+}
+B repeat_c2(Md2D* d, B w, B x) {
+  B g = c2(d->g, inc(w), inc(x));
+  B f = d->f;
+  if (isNum(g)) {
+    i64 am = o2i64(g);
+    if (am>=0) {
+      for (i64 i = 0; i < am; i++) x = c2(f, inc(w), x);
+      dec(w);
+      return x;
+    }
+  }
+  #define CALL(F,X) c2(F, inc(w), X)
+  REPEAT_GEN(CALL, dec(w));
+  #undef CALL
+}
 #undef REPEAT_T
 
 

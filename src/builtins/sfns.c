@@ -1170,6 +1170,27 @@ B shifta_c2(B t, B w, B x) {
   return qWithFill(mut_fcd(r, x), f);
 }
 
+B shift_powm(bool aft, i64 am, B x) {
+  u32 c = aft ? U'«' : U'»';
+  assert(am > 1);
+  if (isAtm(x) || RNK(x)==0) thrF("%c𝕩: 𝕩 cannot be a unit", c);
+  usz ia = IA(x);
+  if (ia==0) return x;
+  B xf = getFillR(x);
+  if (noFill(xf)) thrF("%c𝕩: Fill element of 𝕩 not known", c);
+  usz n = *SH(x);
+  if (am > n) {
+    Arr* r = arr_shCopy(reshape_one(ia, xf), x);
+    decG(x); return taga(r);
+  }
+  usz sz = (usz)am * arr_csz(x);
+  usz r0 = aft? 0 : sz;
+  MAKE_MUT_INIT(r, ia, el_orFill(TI(x,elType))); MUTG_INIT(r);
+  mut_copyG(r, r0, x, sz-r0, ia-sz);
+  mut_fillG(r, aft?ia-sz:0, xf, sz);
+  return qWithFill(mut_fcd(r, x), xf);
+}
+
 B reverse_c1(B t, B x) {
   if (isAtm(x) || RNK(x)==0) thrM("⌽𝕩: 𝕩 cannot be a unit");
   usz n = *SH(x);
@@ -1569,11 +1590,33 @@ NOINLINE B pair_im(B t, B x) {
   return TO_GET(x, 0);
 }
 
-B select_c1(B,B);
-NOINLINE B couple_im(B t, B x) {
-  if (isAtm(x) || RNK(x)==0 || *SH(x)!=1) thrM("≍⁼𝕩: Argument must have a leading axis of 1");
-  return C1(select,x);
+B couple_powm(i64 am, B x) {
+  if (am >= 0) {
+    assert(am > 1);
+    if (isAtm(x)) x = m_unit(x);
+    ur xr = RNK(x);
+    if (am > UR_MAX-xr) thrF("≍𝕩: Result rank too large (%i≡=𝕩)", UR_MAX);
+    ur a = am;
+    ur rr = xr + a;
+    ShArr* sh = m_shArr(rr);
+    for (ur i=0; i<am; i++) sh->a[i] = 1;
+    shcpy(sh->a+am, SH(x), xr);
+    Arr* r = customizeShape(x);
+    return taga(arr_shSetUG(r, rr, sh));
+  } else {
+    ur xr;
+    // Can only eventually hit a rank-0 case if all axis lengths are 1
+    if (isAtm(x) || (am+(xr=RNK(x))<0 && (am=-xr, IA(x)==1))) thrM("≍⁼𝕩: Argument must have a leading axis of 1 (0 ≡ =𝕩)");
+    ur rr = am+xr, dr = xr-rr;
+    usz* sh = SH(x);
+    for (ur i=0; i<dr; i++) if (sh[i]!=1) thrF("≍⁼𝕩: Argument must have a leading axis of 1 (%i ≡ ≠𝕩)", sh[i]);
+    Arr* r = TI(x,slice)(incG(x), 0, IA(x));
+    usz* rsh = arr_shAlloc(r, rr);
+    if (rsh) shcpy(rsh, sh+dr, rr);
+    decG(x); return taga(r);
+  }
 }
+NOINLINE B couple_im(B t, B x) { return couple_powm(-1, x); }
 
 B reverse_ucw(B t, B o, B w, B x) { return reverse_ix(bi_z, w, c1(o, reverse_c2(t, inc(w), x))); }
 B reverse_uc1(B t, B o, B x) { return C1(reverse,      c1(o, reverse_c1(t, x))); }

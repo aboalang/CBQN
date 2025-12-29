@@ -30,13 +30,13 @@
 // COULD convert boolean to integer for some axis reorderings
 // SHOULD have a small-subarray transposer using one or a few shuffles
 
-//  ⍉⁼𝕩: data movement of ⍉ with different shape logic
+//  ⍉⁼𝕩, ⍉⍟n𝕩: data movement of ⍉ with different shape logic
 // 𝕨⍉⁼𝕩: compute inverse 𝕨, length 1+⌈´𝕨
+//   COULD implement fast 𝕨⍉⍟n𝕩
 // Under Transpose supports invertible cases
 //   SHOULD implement Under with duplicate axes, maybe as Under Select
 // ⍉˘𝕩 and k⍉˘𝕩 for number k: convert to 0‿a⍉𝕩
 //   SHOULD convert ⍉ with rank to a Reorder Axes call
-// COULD implement fast ⍉⍟n
 
 #include "../core.h"
 #include "../utils/mut.h"
@@ -475,6 +475,40 @@ B transp_im(B t, B x) {
   rsh[0] = w;
   if (xr==2) rsh[1] = h; else shcpy(rsh+1, SH(x), xr-1);
   decG(x); return taga(r);
+}
+
+B transp_powm(i64 am, B x) { // consumes x; ⍉⍟am 𝕩
+  if (RARE(isAtm(x))) {
+    assert(am != 0);
+    if (am < 0) thrM("⍉⁼𝕩: 𝕩 must not be an atom");
+    return m_unit(x);
+  }
+  ur xr = RNK(x);
+  if (xr<=1) return x;
+  if ((u64)am >= xr) { am%= xr; if (am<0) am+= xr; } // Like sfns.c WRAP_ROT
+  ur k = am, nk = xr-k;
+  #define WRITE_SH(SH) \
+    shcpy(SH, xsh+k, nk); \
+    shcpy(SH+nk, xsh, k)
+  
+  usz ia = IA(x);
+  usz* xsh = SH(x);
+  usz h = shProd(xsh, 0, k);
+  if (ia==0 || h==1 || h==ia) {
+    Arr* r = cpyWithShape(x);
+    ShArr* sh = m_shArr(xr);
+    WRITE_SH(sh->a);
+    arr_shReplace(r, xr, sh);
+    return taga(r);
+  }
+  usz w = shProd(xsh, k, xr);
+  
+  Arr* r = transpose_noshape(&x, ia, w, h);
+  
+  usz* rsh = arr_shAlloc(r, xr);
+  WRITE_SH(rsh);
+  decG(x); return taga(r);
+  #undef WRITE_SH
 }
 
 B transp_uc1(B t, B o, B x) {
