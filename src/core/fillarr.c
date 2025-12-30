@@ -1,4 +1,5 @@
 #include "../core.h"
+#include "../utils/calls.h"
 
 B asFill(B x) { // consumes
   if (isArr(x)) {
@@ -81,13 +82,38 @@ void fillarr_init(void) {
 
 void validateFill(B x) {
   if (isArr(x)) {
-    SGetU(x)
     usz ia = IA(x);
-    for (usz i = 0; i < ia; i++) validateFill(GetU(x,i));
+    u8 xe = TI(x,elType);
+    if (ia == 0) {
+      validateFill(getFillN(x));
+      return;
+    }
+    switch (xe) { default: UD;
+      case el_B: {
+        SGetU(x)
+        for (usz i = 0; i < ia; i++) validateFill(GetU(x,i));
+        // validateFill(getFillN(x)); // results in O(2^n) computation on `⋈⍟100 0` :/
+        break;
+      }
+      case el_bit: case el_i8: case el_i16: case el_i32: case el_f64: {
+        i64 bounds[2];
+        assert(getRange_fns[xe](tyany_ptr(x), bounds, ia));
+        assert(bounds[0] == 0 && bounds[1] == 0);
+        break;
+      }
+      case el_c8: case el_c16: case el_c32: {
+        i64 bounds[2];
+        assert(getRange_fns[xe-el_c8+el_i8](tyany_ptr(x), bounds, ia));
+        assert(bounds[0] == 32 && bounds[1] == 32);
+        break;
+      }
+    }
   } else if (isF64(x)) {
-    assert(x.f==0);
+    assert(numFill(x) && x.u == m_f64(0).u);
   } else if (isC32(x)) {
     assert(' '==(u32)x.u);
+  } else {
+    assert(noFill(x));
   }
 }
 
