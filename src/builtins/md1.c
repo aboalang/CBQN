@@ -160,6 +160,33 @@ B tbl_c2(Md1D* d, B w, B x) { B f = d->f;
 
 static B eachd(B f, B w, B x) {
   if (isAtm(w) & isAtm(x)) return squeezed_unit(c2(f, w, x));
+  if (isFun(f)) {
+    u8 rtid = RTID(f);
+    if (rtid==n_ltack || rtid==n_rtack) {
+      if (rtid==n_ltack) { B t=w; w=x; x=t; }
+      ur wr = isAtm(w)? 0 : RNK(w);
+      ur xr = isAtm(x)? 0 : RNK(x);
+      ur rr = wr<xr? wr : xr;
+      if (rr>0 && !eqShPart(SH(w), SH(x), rr)) {
+        if (rtid==n_ltack) { B t=w; w=x; x=t; }
+        thrF("Mapping: Expected equal shape prefix (%H ≡ ≢𝕨, %H ≡ ≢𝕩)", w, x);
+      }
+      if (wr <= xr) { dec(w); return isAtm(x)? m_unit(x) : x; }
+      Arr* ra;
+      if (xr == 0) {
+        if (isArr(x)) x = TO_GET(x, 0);
+        ra = reshape_one(IA(w), x);
+      } else {
+        x = squeeze_any(x);
+        B r = replicate_by(shProd(SH(w), xr, wr), IA(x), x); decG(x);
+        ra = RARE(!reusable(r))? cpyWithShape(r) : a(r);
+        arr_shErase(ra, 1);
+      }
+      arr_shCopy(ra, w);
+      decG(w);
+      return taga(ra);
+    }
+  }
   return eachd_fn(f, w, x, c2fn(f));
 }
 
