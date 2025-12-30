@@ -150,7 +150,7 @@ NOINLINE B dyArith_SA(DyTableSA* table, B w, B x) {
       B xf = getFillR(x);
       if      (numFill(xf)) charX=0;
       else if (chrFill(xf)) charX=1;
-      else if ( noFill(xf)) { fillVal=0; goto fillSel; }
+      else if ( noFill(xf)) { dec(w); fillVal=0; goto fillSel; }
       else { dec(xf); goto rec; } // whatever
     }
     bool charW;
