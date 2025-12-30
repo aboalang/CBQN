@@ -6,6 +6,8 @@
 
 
 
+#define callMd errMd  // TODO make it an h.h function that doesn't check type
+
 static NOINLINE B homFil1(B f, B r, B xf) {
   assert(EACH_FILLS);
   if (isPureFn(f)) {
@@ -46,13 +48,16 @@ B each_c1(Md1D* d, B x) { B f = d->f;
     if (rtid==n_ltack || rtid==n_rtack) {
       if (EACH_FILLS) dec(xf);
       return TI(x,arrD1) || IA(x)==0? x : squeeze_any(EACH_FILLS? x : withFill(x, bi_noFill));
+    } else if (fun_is_const(f)) {
+      r = taga(arr_shCopy(reshape_one(IA(x), inc(c(Md1D,f)->f)), x));
+      decG(x); return r;
     }
     r = eachm_fn(f, x, c(Fun,f)->c1);
   } else {
     usz ia = IA(x);
-    if (isMd(f) && ia>0) { decR(x); thrM("Calling a modifier"); }
+    if (isMd(f) && ia>0) callMd(f);
     r = taga(arr_shCopy(reshape_one(ia, inc(f)), x));
-    decG(x);
+    decG(x); return r;
   }
   
   if (EACH_FILLS) return homFil1(f, r, xf);
@@ -84,7 +89,7 @@ B tbl_c2(Md1D* d, B w, B x) { B f = d->f;
   FC2 fc2 = c2fn(f);
   Arr* ra_nosh;
   if (RARE(!isFun(f))) {
-    if (isMd(f) && ria>0) thrM("Calling a modifier");
+    if (isMd(f) && ria>0) callMd(f);
     ra_nosh = reshape_one(ria, f);
     goto nosh;
   } else if (RTID(f) == n_ltack) {
@@ -124,6 +129,9 @@ B tbl_c2(Md1D* d, B w, B x) { B f = d->f;
       ra_nosh = APD_TOT_GET(rm);
       goto nosh;
     } else goto generic;
+  } else if (fun_is_const(f)) {
+    ra_nosh = reshape_one(ria, inc(c(Md1D,f)->f));
+    goto nosh;
   } else {
     generic:;
     SGetU(w) SGet(x)
@@ -158,8 +166,24 @@ B tbl_c2(Md1D* d, B w, B x) { B f = d->f;
   }
 }
 
+static B eachd_const(B f, B w, B x) {
+  ur wr = isAtm(w)? 0 : RNK(w);
+  ur xr = isAtm(x)? 0 : RNK(x);
+  ur rr = wr<xr? wr : xr;
+  if (rr>0 && !eqShPart(SH(w), SH(x), rr)) thrF("Mapping: Expected equal shape prefix (%H ≡ ≢𝕨, %H ≡ ≢𝕩)", w, x);
+  if (wr>xr || isAtm(x)) { B t=w; w=x; x=t; }
+  dec(w);
+  usz ia = IA(x);
+  B r = taga(arr_shCopy(reshape_one(ia, inc(f)), x));
+  decG(x); return r;
+}
+
 static B eachd(B f, B w, B x) {
   if (isAtm(w) & isAtm(x)) return squeezed_unit(c2(f, w, x));
+  if (RARE(!isFun(f))) {
+    if (isMd(f) && (isAtm(x)||IA(x)!=0) && (isAtm(w)||IA(w)!=0)) callMd(f);
+    return eachd_const(f, w, x);
+  }
   if (isFun(f)) {
     u8 rtid = RTID(f);
     if (rtid==n_ltack || rtid==n_rtack) {
@@ -186,6 +210,7 @@ static B eachd(B f, B w, B x) {
       decG(w);
       return taga(ra);
     }
+    if (fun_is_const(f)) return eachd_const(c(Md1D,f)->f, w, x);
   }
   return eachd_fn(f, w, x, c2fn(f));
 }

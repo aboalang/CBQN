@@ -241,21 +241,28 @@ static B scan_plus(f64 r0, B x, u8 xe, usz ia) {
   #endif
 }
 
+static B scan_c1_const(B f, B x, usz ia, u8 xe) {
+  B xf = getFillR(x);
+  MAKE_MUT_INIT(rm, ia, el_or(xe, selfElType(f))); MUTG_INIT(rm);
+  usz csz = arr_csz(x);
+  mut_copyG(rm, 0, x, 0, csz);
+  mut_fillG(rm, csz, f, ia-csz);
+  return withFill(mut_fcd(rm, x), xf);
+}
+static B scan_c2_const(B f, B x, usz ia) {
+  Arr* ra = arr_shCopy(reshape_one(ia, inc(f)), x);
+  B xf = getFillR(x);
+  decG(x);
+  return withFill(taga(ra), xf);
+}
+
 extern B scan_arith(B f, B w, B x, usz* xsh); // from cells.c
 B scan_c1(Md1D* d, B x) { B f = d->f;
   if (isAtm(x)) { unit: thrM("𝔽`𝕩: 𝕩 cannot have rank 0"); }
   usz ia = IA(x); if (ia <= 1) { if (ia==1 && RNK(x)==0) goto unit; return x; }
   usz n = *SH(x); if (n  <= 1) return x;
   u8 xe = TI(x,elType);
-  if (RARE(!isFun(f))) {
-    errMd(f);
-    B xf = getFillR(x);
-    MAKE_MUT_INIT(rm, ia, el_or(xe, selfElType(f))); MUTG_INIT(rm);
-    usz csz = arr_csz(x);
-    mut_copyG(rm, 0, x, 0, csz);
-    mut_fillG(rm, csz, f, ia-csz);
-    return withFill(mut_fcd(rm, x), xf);
-  }
+  if (RARE(!isFun(f))) return scan_c1_const(errMd(f), x, ia, xe);
   if (RTID(f) != RTID_NONE) {
     u8 rtid = RTID(f);
     if (rtid==n_rtack) return x;
@@ -338,6 +345,8 @@ B scan_c1(Md1D* d, B x) { B f = d->f;
       UD;
     }
     if (rtid==n_or) { x=squeeze_numTry(x, &xe, SQ_ANY); if (xe==el_bit) return scan_or(x, ia); }
+  } else if (fun_is_const(f)) {
+    return scan_c1_const(c(Md1D,f)->f, x, ia, xe);
   }
   base:;
   if (ia!=n && ia >= 6 * (u64)n && isPervasiveDy(f)) return scan_arith(f, bi_z, x, SH(x));
@@ -366,12 +375,7 @@ B scan_c2(Md1D* d, B w, B x) { B f = d->f;
   ur xr = RNK(x); usz* xsh = SH(x); usz ia = IA(x);
   if (isArr(w)? !ptr_eqShape(SH(w), RNK(w), xsh+1, xr-1) : xr!=1) thrF("𝕨𝔽`𝕩: Shape of 𝕨 must match the cell of 𝕩 (%H ≡ ≢𝕨, %H ≡ ≢𝕩)", w, x);
   if (ia==0) { dec(w); return x; }
-  if (RARE(!isFun(f))) {
-    Arr* ra = arr_shCopy(reshape_one(ia, inc(errMd(f))), x);
-    B xf = getFillR(x);
-    decG(x);
-    return withFill(taga(ra), xf);
-  }
+  if (RARE(!isFun(f))) return scan_c2_const(errMd(f), x, ia);
   u8 xe = TI(x,elType);
   if (RTID(f) != RTID_NONE) {
     u8 rtid = RTID(f);
@@ -414,6 +418,8 @@ B scan_c2(Md1D* d, B w, B x) { B f = d->f;
       if (rtid==n_and | rtid==n_mul) return  o2bG(w)? scan_and(x, ia) : i64EachDec(0, x); // ∧×
       if (rtid==n_lt)                return scan_lt(x, bitx(w), ia); // <
     }
+  } else if (fun_is_const(f)) {
+    return scan_c2_const(c(Md1D,f)->f, x, ia);
   }
   base:;
   if (xr>1 && ia >= 6 * (u64)*SH(x) && isPervasiveDy(f)) return scan_arith(f, w, x, SH(x));

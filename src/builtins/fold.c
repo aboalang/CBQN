@@ -324,6 +324,8 @@ B fold_c1(Md1D* d, B x) { B f = d->f;
       if (xe==el_i16) { i16* xp = i16any_ptr(x); usz i=ia; while (i--) { i16 c=xp[i]; if (c==1) break; if (c!=0) goto base; } decG(x); return m_i32(i+1 > 0); }
       if (xe==el_i32) { i32* xp = i32any_ptr(x); usz i=ia; while (i--) { i32 c=xp[i]; if (c==1) break; if (c!=0) goto base; } decG(x); return m_i32(i+1 > 0); }
     }
+  } else if (fun_is_const(f)) {
+    decG(x); return inc(c(Md1D,f)->f);
   }
   base:;
   SLOW2("𝕎´ 𝕩", f, x);
@@ -392,6 +394,8 @@ B fold_c2(Md1D* d, B w, B x) { B f = d->f;
       if (xe==el_i16) { i16* xp = i16any_ptr(x); usz i=ia; if (!wi) while (i--) { i16 c=xp[i]; if (c==1) break; if (c!=0) goto base; } decG(x); return m_i32(i+1 > 0); }
       if (xe==el_i32) { i32* xp = i32any_ptr(x); usz i=ia; if (!wi) while (i--) { i32 c=xp[i]; if (c==1) break; if (c!=0) goto base; } decG(x); return m_i32(i+1 > 0); }
     }
+  } else if (fun_is_const(f)) {
+    dec(w); decG(x); return inc(c(Md1D,f)->f);
   }
   base:;
   SLOW3("𝕨 F´ 𝕩", w, x, f);
@@ -606,6 +610,8 @@ B insert_c1(Md1D* d, B x) { B f = d->f;
       else arr_shVec(r);
       return taga(r);
     }
+  } else if (fun_is_const(f)) {
+    decG(x); return inc(c(Md1D,f)->f);
   }
   return insert_base(f, x, 0, bi_z);
 }
@@ -649,6 +655,8 @@ B insert_c2(Md1D* d, B w, B x) { B f = d->f;
     u8 rtid = RTID(f);
     if (rtid==n_ltack) { dec(w); return C1(select, x); }
     if (rtid==n_rtack) { decG(x); return w; }
+  } else if (fun_is_const(f)) {
+    dec(w); decG(x); return inc(c(Md1D,f)->f);
   }
   return insert_base(f, x, 1, w);
 }

@@ -88,14 +88,19 @@ static bool isPervasiveDyExt(B x) {
   return false;
 }
 
+FORCE_INLINE bool md1_is_const(Md1* m1) {
+  return PTY(m1)==t_md1BI && PRTID(m1) == n_const;
+}
 static bool toConstant(B x, B* out) { // doesn't consume x; if possible, writes an owned reference to out, else leaves out unmodified
   if (!isCallable(x)) { *out = inc(x); return true; }
   if (TY(x) == t_md1D) {
     Md1D* d = c(Md1D,x);
-    Md1* m1 = d->m1;
-    if (PTY(m1)==t_md1BI && PRTID(m1) == n_const) { *out = inc(d->f); return true; }
+    if (md1_is_const(d->m1)) { *out = inc(d->f); return true; }
   }
   return false;
+}
+static inline bool fun_is_const(B f) {
+  return TY(f)==t_md1D && md1_is_const(c(Md1D,f)->m1);
 }
 
 extern GLOBAL B
