@@ -8,6 +8,16 @@
 
 #define callMd errMd  // TODO make it an h.h function that doesn't check type
 
+SHOULD_INLINE Arr* reshape_one_eachfill(usz ia, B x) { // doesn't consume x
+  if (EACH_FILLS) {
+    return reshape_one(ia, inc(x));
+  } else {
+    MAKE_MUT(rm, ia);
+    mut_fill(rm, 0, x, ia);
+    return mut_fp(rm);
+  }
+}
+
 static NOINLINE B homFil1(B f, B r, B xf) {
   assert(EACH_FILLS);
   if (isPureFn(f)) {
@@ -49,14 +59,14 @@ B each_c1(Md1D* d, B x) { B f = d->f;
       if (EACH_FILLS) dec(xf);
       return TI(x,arrD1) || IA(x)==0? x : squeeze_any(EACH_FILLS? x : withFill(x, bi_noFill));
     } else if (fun_is_const(f)) {
-      r = taga(arr_shCopy(reshape_one(IA(x), inc(c(Md1D,f)->f)), x));
+      r = taga(arr_shCopy(reshape_one_eachfill(IA(x), c(Md1D,f)->f), x));
       decG(x); return r;
     }
     r = eachm_fn(f, x, c(Fun,f)->c1);
   } else {
     usz ia = IA(x);
     if (isMd(f) && ia>0) callMd(f);
-    r = taga(arr_shCopy(reshape_one(ia, inc(f)), x));
+    r = taga(arr_shCopy(reshape_one_eachfill(ia, f), x));
     decG(x); return r;
   }
   
@@ -90,7 +100,7 @@ B tbl_c2(Md1D* d, B w, B x) { B f = d->f;
   Arr* ra_nosh;
   if (RARE(!isFun(f))) {
     if (isMd(f) && ria>0) callMd(f);
-    ra_nosh = reshape_one(ria, inc(f));
+    ra_nosh = reshape_one_eachfill(ria, f);
     goto nosh;
   } else if (RTID(f) == n_ltack) {
     w = squeeze_any(w);
@@ -130,7 +140,7 @@ B tbl_c2(Md1D* d, B w, B x) { B f = d->f;
       goto nosh;
     } else goto generic;
   } else if (fun_is_const(f)) {
-    ra_nosh = reshape_one(ria, inc(c(Md1D,f)->f));
+    ra_nosh = reshape_one_eachfill(ria, c(Md1D,f)->f);
     goto nosh;
   } else {
     generic:;
@@ -174,7 +184,7 @@ static B eachd_const(B f, B w, B x) {
   if (wr>xr || isAtm(x)) { B t=w; w=x; x=t; }
   dec(w);
   usz ia = IA(x);
-  B r = taga(arr_shCopy(reshape_one(ia, inc(f)), x));
+  B r = taga(arr_shCopy(reshape_one_eachfill(ia, f), x));
   decG(x); return r;
 }
 
