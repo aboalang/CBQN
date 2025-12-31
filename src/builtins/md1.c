@@ -90,7 +90,7 @@ B tbl_c2(Md1D* d, B w, B x) { B f = d->f;
   Arr* ra_nosh;
   if (RARE(!isFun(f))) {
     if (isMd(f) && ria>0) callMd(f);
-    ra_nosh = reshape_one(ria, f);
+    ra_nosh = reshape_one(ria, inc(f));
     goto nosh;
   } else if (RTID(f) == n_ltack) {
     w = squeeze_any(w);
