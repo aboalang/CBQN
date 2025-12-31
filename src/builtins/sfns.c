@@ -1107,7 +1107,7 @@ static inline void shift_check(B w, B x, u32 chr) {
 }
 
 B shiftb_c1(B t, B x) {
-  if (isAtm(x) || RNK(x)==0) thrM("»𝕩: 𝕩 cannot be a scalar");
+  if (isAtm(x) || RNK(x)==0) thrM("»𝕩: 𝕩 cannot be a unit");
   usz ia = IA(x);
   if (ia==0) return x;
   B xf = getFillE(x, "»𝕩: Fill element of 𝕩 not known");
@@ -1122,7 +1122,7 @@ B shiftb_c1(B t, B x) {
   return qWithFill(mut_fcd(r, x), xf);
 }
 B shiftb_c2(B t, B w, B x) {
-  if (isAtm(x) || RNK(x)==0) thrM("𝕨»𝕩: 𝕩 cannot be a scalar");
+  if (isAtm(x) || RNK(x)==0) thrM("𝕨»𝕩: 𝕩 cannot be a unit");
   if (isAtm(w)) w = m_unit(w);
   shift_check(w, x, U'»');
   B f = fill_both(w, x);
@@ -1137,7 +1137,7 @@ B shiftb_c2(B t, B w, B x) {
 }
 
 B shifta_c1(B t, B x) {
-  if (isAtm(x) || RNK(x)==0) thrM("«𝕩: 𝕩 cannot be a scalar");
+  if (isAtm(x) || RNK(x)==0) thrM("«𝕩: 𝕩 cannot be a unit");
   usz ia = IA(x);
   if (ia==0) return x;
   B xf = getFillE(x, "«𝕩: Fill element of 𝕩 not known");
@@ -1152,7 +1152,7 @@ B shifta_c1(B t, B x) {
   return qWithFill(mut_fcd(r, x), xf);
 }
 B shifta_c2(B t, B w, B x) {
-  if (isAtm(x) || RNK(x)==0) thrM("𝕨«𝕩: 𝕩 cannot be a scalar");
+  if (isAtm(x) || RNK(x)==0) thrM("𝕨«𝕩: 𝕩 cannot be a unit");
   if (isAtm(w)) w = m_unit(w);
   shift_check(w, x, U'«');
   B f = fill_both(w, x);
