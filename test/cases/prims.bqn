@@ -423,6 +423,16 @@ b←1↓1∾a←"hello" ⋄ b ⌽⎊'e' ⥊⟜1⍟2 5 ⋄ a ≡○•Hash b %% 1
 !"Out of memory" % ⟨∞⟩⊔"a"
 !"Out of memory" % ⟨1e50⟩⊔"a"
 {≢¨ (𝕩⥊¯1‿0) ⊔ 𝕩‿1‿2‿3⥊'z'}¨ 11×1+↕30 %% (⋈∾⟜1‿2‿3)¨ ⌊2÷˜11×1+↕30
+!"𝕨⊔𝕩: 𝕨 can't contain elements less than ¯1" % %USE evar ⋄ 1‿2‿¯4   ⊔_evar 3⥊0
+!"𝕨⊔𝕩: 𝕨 can't contain elements less than ¯1" % %USE evar ⋄ 1‿2‿¯4 ⋈⊸⊔_evar 3⥊0
+!"𝕨⊔𝕩: ≠𝕨 must be either ≠𝕩 or one bigger (3≡≠𝕨, 4≡≠𝕩)" % %USE evar ⋄ (↕3)   ⊔_evar 4⥊0
+!"𝕨⊔𝕩: ≠𝕨 must be either ≠𝕩 or one bigger (3≡≠𝕨, 4≡≠𝕩)" % %USE evar ⋄ (↕3) ⋈⊸⊔_evar 4⥊0
+!"𝕨⊔𝕩: ≠𝕨 must be either ≠𝕩 or one bigger (4≡≠𝕨, 2≡≠𝕩)" % %USE evar ⋄ (↕4)   ⊔_evar 2‿2⥊0
+!"𝕨⊔𝕩: ≠𝕨 must be either ≠𝕩 or one bigger (4≡≠𝕨, 2≡≠𝕩)" % %USE evar ⋄ (↕4) ⋈⊸⊔_evar 2‿2⥊0
+!"⊔: Grouping argument must consist of integers" % %USE evar ⋄ 1‿2‿π ⋈⊸⊔_evar 3⥊0
+!"⊔: Grouping argument must consist of integers" % %USE evar ⋄ 1‿2‿@ ⋈⊸⊔_evar 3⥊0
+!"⊔: Grouping argument must consist of integers" % %USE evar ⋄ ⊔_evar 1‿2‿@
+!"𝕨⊔𝕩: 𝕨 can't contain elements less than ¯1" % %USE evar ⋄ ⊔_evar 1‿2‿¯4
 
 # ↕𝕩
 !"Expected non-negative integer, got character" % ↕@

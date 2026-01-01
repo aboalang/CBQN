@@ -383,14 +383,9 @@ B group_c2(B t, B w, B x) {
   ur xr = RNK(x), wr;
   if (isArr(w) && (wr=RNK(w))<=xr) {
     u8 we = TI(w,elType);
-    if (!elInt(we)) w = squeeze_numTry(w, &we, SQ_ANY);
-    if (!elNum(we) && wr==1 && IA(w)==1) { // Check for ⟨int⟩⊔𝕩
-      B e = IGetU(w,0);
-      if (isArr(e) && elInt(TI(e,elType)) && (wr=RNK(e))<=xr) {
-        inc(e); decG(w); w = e; we = TI(w,elType);
-      }
-    }
+    if (!elInt(we)) w = squeeze_numTry(w, &we, SQ_INT);
     if (elInt(we)) {
+      elint:;
       usz wia = IA(w);
       usz* xsh = SH(x);
       usz xn;
@@ -416,13 +411,27 @@ B group_c2(B t, B w, B x) {
       }
       return group_simple(w, x, xr, wia, xn, xsh, we);
     }
+    if (!elNum(we) && wr==1 && IA(w)==1) { // Check for ⟨int⟩⊔𝕩
+      B w0 = IGetU(w,0);
+      if (!isArr(w0) || !((wr=RNK(w0))<=xr)) goto base;
+      incG(w0); we = TI(w0,elType);
+      if (!elInt(we)) w0 = squeeze_numTry(w0, &we, SQ_INT);
+      if (!elInt(we)) { decG(w0); goto base; }
+      decG(w); w = w0;
+      goto elint;
+    }
   }
+  base:
   return c2rt(group, w, x);
 }
 B group_c1(B t, B x) {
-  if (isArr(x) && RNK(x)==1 && TI(x,arrD1)) {
+  if (isArr(x) && RNK(x)==1) {
+    u8 we = TI(x,elType);
+    if (!elInt(we)) x = squeeze_numTry(x, &we, SQ_INT);
+    if (!elInt(we)) goto base;
     B range = C1(ud, m_f64(IA(x)));
     return C2(group, x, range);
   }
+  base:
   return c1rt(group, x);
 }
