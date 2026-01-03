@@ -1552,10 +1552,11 @@ B shape_ucw(B t, B o, B w, B x) {
 
 
 B reverse_ix(B t, B w, B x) {
-  if (isAtm(x) || RNK(x)==0) thrM("𝕨⌽⁼𝕩: 𝕩 must have rank at least 1");
-  if (isF64(w)) return C2(reverse, m_f64(-o2fG(w)), x);
-  if (isAtm(w)) thrM("𝕨⌽⁼𝕩: 𝕨 must consist of integers");
-  return rotate_highrank(1, w, x);
+  if (isAtm(x)) thrM("𝕨⌽⁼𝕩: 𝕩 cannot be an atom");
+  if (isArr(w)) return rotate_highrank(1, w, x);
+  if (RNK(x)==0) thrM("𝕨⌽⁼𝕩: 𝕩 must have rank at least 1 for atom 𝕨");
+  if (!isF64(w)) thrM("𝕨⌽⁼𝕩: 𝕨 must consist of integers");
+  return C2(reverse, m_f64(-o2fG(w)), x);
 }
 
 NOINLINE B enclose_im(B t, B x) {
