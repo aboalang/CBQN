@@ -128,8 +128,7 @@ B tbl_c2(Md1D* d, B w, B x) { B f = d->f;
       }
       r = fc2(f, expW, expX);
       arith_finish:;
-      ra_nosh = RARE(!reusable(r))? cpyWithShape(r) : a(r);
-      arr_shErase(ra_nosh, 1);
+      ra_nosh = customizeShape(r);
       goto nosh;
     } else if (xia>3) {
       SGet(w)
@@ -213,8 +212,7 @@ static B eachd(B f, B w, B x) {
       } else {
         x = squeeze_any(x);
         B r = replicate_by(shProd(SH(w), xr, wr), IA(x), x); decG(x);
-        ra = RARE(!reusable(r))? cpyWithShape(r) : a(r);
-        arr_shErase(ra, 1);
+        ra = customizeShape(r);
       }
       arr_shCopy(ra, w);
       decG(w);
