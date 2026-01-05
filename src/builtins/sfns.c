@@ -5,15 +5,18 @@
 
 static u8 el_orFill(u8 el) { return el; } // currently arrays always fit their fill element
 
-// TODO clear sortedness flags on customizeShape & cpyWithShape
 Arr* customizeShape(B x) {
-  if (reusable(x) && RNK(x)<=1) return a(x);
+  if (reusable(x)) {
+    FL_KEEP(x, fl_squoze);
+    if (RNK(x)<=1) return a(x);
+    return arr_shErase(a(x), 0);
+  }
   return TI(x,slice)(x,0,IA(x));
 }
 
 Arr* cpyWithShape(B x) {
   Arr* xv = a(x);
-  if (reusable(x)) return xv;
+  if (reusable(x)) return FLV_KEEP(xv, fl_squoze);
   ur xr = PRNK(xv);
   Arr* r;
   if (xr<=1) {
@@ -97,8 +100,7 @@ static Arr* take_head(usz ria, B x) { // consumes; returns ria↑x with unset sh
     inplace_ok:;
     reinit_portion(a(x), ria, xia);
     arr_shErase(a(x), 1);
-    FL_KEEP(x, fl_asc|fl_dsc);
-    a(x)->ia = ria;
+    a(REUSE(x))->ia = ria;
     return a(x);
     
     try_copy:;
@@ -695,6 +697,7 @@ NOINLINE B takedrop_highrank(bool take, B w, B x) {
   i64 n = wv;             \
   ur xr = RNK(x);         \
   usz csz=1; usz* xsh ONLY_GCC(=0); \
+  u8 fl = FL_GET(x) & (fl_asc|fl_dsc); \
   if (xr>1) {             \
     csz = arr_csz(x);     \
     xsh = SH(x);          \
@@ -703,6 +706,7 @@ NOINLINE B takedrop_highrank(bool take, B w, B x) {
   } else xr=1;            \
 
 #define TAKEDROP_SHAPE(SH0)     \
+  FLV_SET(a, fl);               \
   if (xr>1) {                   \
     usz* rsh=arr_shAlloc(a,xr); \
     u64 wva = wv<0? -wv : wv;   \
@@ -718,7 +722,8 @@ B take_c2(B t, B w, B x) {
   if (n>=0) {
     if (n != (usz)n) thrOOM();
     a = take_impl(n, x, "𝕨↑𝕩: Fill element of 𝕩 needed for overtaking");
-    if (xr==1) return taga(arr_shVec(a));
+    maybe_rank1:
+    if (xr==1) return taga(arr_shVec(FLV_SET(a, fl)));
   } else {
     n = -n;
     if (n != (usz)n) thrOOM();
@@ -732,7 +737,7 @@ B take_c2(B t, B w, B x) {
       a = a(withFill(taga(arr_shVec(mut_fp(r))), xf));
     } else {
       a = TI(x,slice)(x,xia-n,n);
-      if (xr==1) return taga(arr_shVec(a));
+      goto maybe_rank1;
     }
   }
   TAKEDROP_SHAPE(wva);
@@ -754,7 +759,7 @@ B drop_c2(B t, B w, B x) {
   }
   
   res:;
-  if (xr==1) return taga(arr_shVec(a));
+  if (xr==1) return taga(arr_shVec(FLV_SET(a, fl)));
   TAKEDROP_SHAPE(wva>=*xsh? 0 : *xsh-wva);
 }
 
@@ -1371,10 +1376,11 @@ static B pick_replaceOne(B fn, usz pos, B x, usz xia) {
   if (TI(x,elType)==el_B) {
     B* xp;
     if (TY(x)==t_harr || TY(x)==t_hslice) {
-      if (!(TY(x)==t_harr && reusable(x))) x = taga(cpyHArr(x));
+      if (TY(x)==t_harr && reusable(x)) x = REUSE(x);
+      else x = taga(cpyHArr(x));
       xp = harr_ptr(x);
     } else if (TY(x)==t_fillarr && reusable(x)) {
-      xp = fillarrv_ptr(a(x));
+      xp = fillarrv_ptr(a(REUSE(x)));
     } else {
       Arr* x2 = m_fillarrp(xia);
       fillarr_setFill(x2, getFillR(x));
