@@ -105,9 +105,9 @@ w←1‿1⥊1 ⋄ x←2⥊1 ⋄ w‿x <¨↩   ⋄ {! (∾⟨"𝕨",•Repr𝕩,
 !"Expected non-negative integer, got ¯1000" % (4/1000‿¯1000) / 8⥊1
 !"Integer out of range: 4e19" % %USE evar ⋄ 2‿4e19 /_evar ↕2
 
-!"𝕨/𝕩: Length of compound 𝕨 must be at most rank of 𝕩" % ⟨↕1⟩/3
-!"𝕨/𝕩: Length of compound 𝕨 must be at most rank of 𝕩" % ⟨↕1⟩/<"ab"
-!"𝕨/𝕩: Length of compound 𝕨 must be at most rank of 𝕩" % (<↕1)/<"ab"
+!"𝕨/𝕩: 𝕩 must have rank at least 1 for simple 𝕨" % ⟨↕1⟩/3
+!"𝕨/𝕩: 𝕩 must have rank at least 1 for simple 𝕨" % ⟨↕1⟩/<"ab"
+!"𝕨/𝕩: 𝕩 must have rank at least 1 for simple 𝕨" % (<↕1)/<"ab"
 !"𝕨/𝕩: Length of compound 𝕨 must be at most rank of 𝕩" % (<↕0)/<"ab"
 !"𝕨/𝕩: Length of compound 𝕨 must be at most rank of 𝕩" % ⟨↕10,↕10⟩ / 10⥊10
 !"𝕨/𝕩: Length of compound 𝕨 must be at most rank of 𝕩" % ⟨↕10,↕10,<0⟩ / 10‿10⥊10
@@ -423,6 +423,16 @@ b←1↓1∾a←"hello" ⋄ b ⌽⎊'e' ⥊⟜1⍟2 5 ⋄ a ≡○•Hash b %% 1
 !"Out of memory" % ⟨∞⟩⊔"a"
 !"Out of memory" % ⟨1e50⟩⊔"a"
 {≢¨ (𝕩⥊¯1‿0) ⊔ 𝕩‿1‿2‿3⥊'z'}¨ 11×1+↕30 %% (⋈∾⟜1‿2‿3)¨ ⌊2÷˜11×1+↕30
+!"𝕨⊔𝕩: 𝕨 can't contain elements less than ¯1" % %USE evar ⋄ 1‿2‿¯4   ⊔_evar 3⥊0
+!"𝕨⊔𝕩: 𝕨 can't contain elements less than ¯1" % %USE evar ⋄ 1‿2‿¯4 ⋈⊸⊔_evar 3⥊0
+!"𝕨⊔𝕩: ≠𝕨 must be either ≠𝕩 or one bigger (3≡≠𝕨, 4≡≠𝕩)" % %USE evar ⋄ (↕3)   ⊔_evar 4⥊0
+!"𝕨⊔𝕩: ≠𝕨 must be either ≠𝕩 or one bigger (3≡≠𝕨, 4≡≠𝕩)" % %USE evar ⋄ (↕3) ⋈⊸⊔_evar 4⥊0
+!"𝕨⊔𝕩: ≠𝕨 must be either ≠𝕩 or one bigger (4≡≠𝕨, 2≡≠𝕩)" % %USE evar ⋄ (↕4)   ⊔_evar 2‿2⥊0
+!"𝕨⊔𝕩: ≠𝕨 must be either ≠𝕩 or one bigger (4≡≠𝕨, 2≡≠𝕩)" % %USE evar ⋄ (↕4) ⋈⊸⊔_evar 2‿2⥊0
+!"⊔: Grouping argument must consist of integers" % %USE evar ⋄ 1‿2‿π ⋈⊸⊔_evar 3⥊0
+!"⊔: Grouping argument must consist of integers" % %USE evar ⋄ 1‿2‿@ ⋈⊸⊔_evar 3⥊0
+!"⊔: Grouping argument must consist of integers" % %USE evar ⋄ ⊔_evar 1‿2‿@
+!"𝕨⊔𝕩: 𝕨 can't contain elements less than ¯1" % %USE evar ⋄ ⊔_evar 1‿2‿¯4
 
 # ↕𝕩
 !"Expected non-negative integer, got character" % ↕@
@@ -692,6 +702,8 @@ b←1↓1∾a←"hello" ⋄ b ⌽⎊'e' ⥊⟜1⍟2 5 ⋄ a ≡○•Hash b %% 1
 %USE eqvar ⋄ (!  ⊢○•internal.Keep⌜ ≡  ⊢⌜_eqvar)○↕⌜˜ 0‿1‿2‿4‿9‿16
 %USE eqvar ⋄ (!  ⊣○•internal.Keep⌜ ≡  ⊣⌜_eqvar)○↕⌜˜ 0‿1‿2‿4‿9‿16
 %USE eqvar ⋄ (!  9○•internal.Keep⌜ ≡  9⌜_eqvar)○↕⌜˜ 0‿1‿2‿4‿9‿16
+%USE eqall ⋄ Eqall {𝕊: 1‿2}⌜⌜˜ ⟨1, <1⟩ %% <1‿2
+%USE eqall ⋄ Eqall      1‿2⌜⌜˜ ⟨1, <1⟩ %% <1‿2
 
 # ˜
 5˜˝ "ab" %% 5
