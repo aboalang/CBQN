@@ -617,7 +617,7 @@ B insert_c1(Md1D* d, B x) { B f = d->f;
 }
 B insert_c2(Md1D* d, B w, B x) { B f = d->f;
   ur xr;
-  if (isAtm(x) || (xr=RNK(x))==0) thrM("𝕨˝𝕩: 𝕩 must have rank at least 1");
+  if (isAtm(x) || (xr=RNK(x))==0) thrM("𝕨𝔽˝𝕩: 𝕩 must have rank at least 1");
   usz len = *SH(x);
   if (len==0) { decG(x); return w; }
   if (RARE(!isFun(f))) { dec(w); decG(x); return inc(errMd(f)); }
