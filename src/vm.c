@@ -63,7 +63,7 @@ void print_BCStream(FILE* f, u32* p) {
 }
 
 
-GLOBAL B thrownMsg = bi_N;
+GLOBAL B thrownMsg;
 GLOBAL u64 envPrevHeight;
 
 GLOBAL Env* envCurr; // pointer to current environment; included to make for simpler current position updating

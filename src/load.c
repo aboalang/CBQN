@@ -861,6 +861,8 @@ void base_init() { // very first init function
   assert(MD1_TAG+1 == MD2_TAG); // dependencies: isCallable
   assert(MD2_TAG+1 == FUN_TAG); // dependencies: isCallable
   
+  thrownMsg = bi_N;
+  
   // dependencies: v_tagCheck & the JIT equivalent
   assert(v_bad17_read == (bi_noVar.u >>47));
   assert(v_bad17_read == (bi_optOut.u>>47));
