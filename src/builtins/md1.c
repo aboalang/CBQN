@@ -178,8 +178,8 @@ B tbl_c2(Md1D* d, B w, B x) { B f = d->f;
 static B eachd_const(B f, B w, B x) {
   ur wr = isAtm(w)? 0 : RNK(w);
   ur xr = isAtm(x)? 0 : RNK(x);
-  ur rr = wr<xr? wr : xr;
-  if (rr>0 && !eqShPart(SH(w), SH(x), rr)) thrF("Mapping: Expected equal shape prefix (%H ≡ ≢𝕨, %H ≡ ≢𝕩)", w, x);
+  ur mr = wr<xr? wr : xr;
+  if (mr>0 && !eqShPart(SH(w), SH(x), mr)) thrF("Mapping: Expected equal shape prefix (%H ≡ ≢𝕨, %H ≡ ≢𝕩)", w, x);
   if (wr>xr || isAtm(x)) { B t=w; w=x; x=t; }
   dec(w);
   usz ia = IA(x);
@@ -199,8 +199,8 @@ static B eachd(B f, B w, B x) {
       if (rtid==n_ltack) { B t=w; w=x; x=t; }
       ur wr = isAtm(w)? 0 : RNK(w);
       ur xr = isAtm(x)? 0 : RNK(x);
-      ur rr = wr<xr? wr : xr;
-      if (rr>0 && !eqShPart(SH(w), SH(x), rr)) {
+      ur mr = wr<xr? wr : xr;
+      if (mr>0 && !eqShPart(SH(w), SH(x), mr)) {
         if (rtid==n_ltack) { B t=w; w=x; x=t; }
         thrF("Mapping: Expected equal shape prefix (%H ≡ ≢𝕨, %H ≡ ≢𝕩)", w, x);
       }
