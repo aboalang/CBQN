@@ -1,6 +1,8 @@
 // Ordering functions: Sort (∧∨), Grade (⍋⍒), Bins (⍋⍒)
 
 // Sort and Grade
+// Trivial results on empty, single-cell, or flagged-sorted 𝕩
+//   COULD reverse to sort flat 𝕩 with flag in opposite direction
 // Small ≠𝕩 sort (not grade): insertion sort
 //   SHOULD implement insertion grade
 // Small range sort (not grade): counting sort
@@ -14,7 +16,7 @@
 //   Singeli +` used if available, speeding up shorter cases
 //   SHOULD skip steps where all bytes are equal
 // General case: Timsort
-// SHOULD check for sorted flag and scan for sortedness in all cases
+// SHOULD scan for sortedness in all cases
 // SHOULD use an adaptive quicksort for 4- and 8-byte arguments
 // SHOULD widen odd cell sizes under 8 bytes in sort and grade
 
@@ -206,9 +208,9 @@ extern i8 (*const simd_count_i8)(u16*, u16*, void*, u64, i8);
 #define SORT_C1 CAT(GRADE_UD(and,or),c1)
 B SORT_C1(B t, B x) {
   if (isAtm(x) || RNK(x)==0) thrM(GRADE_UD("∧","∨")"𝕩: 𝕩 cannot have rank 0");
-  usz n = *SH(x);
+  usz n = IA(x);
   if (n <= 1 || FL_HAS(x,GRADE_UD(fl_asc,fl_dsc))) return x;
-  if (RNK(x)!=1) return IA(x)<=1? x : bqn_merge(SORT_C1(t, toCells(x)), 0);
+  if (RNK(x)!=1) return *SH(x)<=1? x : bqn_merge(SORT_C1(t, toCells(x)), 0);
   u8 xe = TI(x,elType);
   B r;
   if (xe==el_bit) {
@@ -277,25 +279,31 @@ extern GLOBAL Arr* bitUD[3]; // from fns.c
 extern GLOBAL B bit2x[2]; // from fns.c
 extern GLOBAL B int2x[2]; // from sort.c
 extern B grade_bool(B x, usz n, bool up); // slash.c
+extern B ud_c1(B,B);
 
 #define GRADE_CHR GRADE_UD("⍋","⍒")
 B GRADE_CAT(c1)(B t, B x) {
-  if (isAtm(x) || RNK(x)==0) thrM(GRADE_CHR"𝕩: 𝕩 cannot be a unit");
-  if (RNK(x)>1) x = toCells(x);
+  if (isAtm(x)) unit: thrM(GRADE_CHR"𝕩: 𝕩 cannot be a unit");
   usz n = IA(x);
-  B r;
-  if (n<=2) {
-    if (n==2) { SGetU(x); r = incG(bit2x[!(compare(GetU(x,0), GetU(x,1)) GRADE_UD(<=,>=) 0)]); }
-    else if (n==1) r = taga(ptr_inc(bitUD[1]));
-    else r = emptyIVec();
-    decG(x);
-    return r;
+  ur xr = RNK(x); // xr==0 implies n==1
+  if (n <= 1 || FL_HAS(x,GRADE_UD(fl_asc,fl_dsc))) {
+    if (xr!=1) { if (xr==0) goto unit; n=*SH(x); }
+    sorted: decG(x); return n<=2? taga(ptr_inc(bitUD[n])) : C1(ud,m_usz(n));
+  }
+  if (xr > 1) {
+    n = *SH(x); if (n<=1) goto sorted;
+    x = toCells(x);
+  }
+  if (n == 2) {
+    SGetU(x);
+    B r = incG(bit2x[!(compare(GetU(x,0), GetU(x,1)) GRADE_UD(<=,>=) 0)]);
+    decG(x); return r;
   }
   
   u8 xe = TI(x,elType);
   if (xe==el_bit) return grade_bool(x, n, GRADE_UD(1,0));
   if (n>I32_MAX) thrM(GRADE_CHR"𝕩: 𝕩 too large");
-  i32* rp; r = m_i32arrv(&rp, n);
+  i32* rp; B r = m_i32arrv(&rp, n);
   if (xe==el_i8 && n>8) {
     i8* xp = i8any_ptr(x);
     RADIX_SORT_i8(usz, GRADE);
