@@ -140,11 +140,11 @@ B repeat_c1(Md2D* d, B x) {
         am = 0; break;
       case n_stile: case n_shape:
       case n_indexOf: case n_find: case n_and: case n_or:
-        if (am > 1) am = 1; break;
+        if (am > 1) { am = 1; } break;
       case n_eq: case n_ne: case n_feq:
-        if (am > 2) am = 2; break;
+        if (am > 2) { am = 2; } break;
       case n_fne:
-        if (am > 3) am = 3; break;
+        if (am > 3) { am = 3; } break;
       case n_reverse:
         am &= 1;
         if (am==0 && (isAtm(x) || RNK(x)==0)) thrM("⌽𝕩: 𝕩 cannot be a unit");
@@ -152,16 +152,17 @@ B repeat_c1(Md2D* d, B x) {
       case n_sub: case n_add: { // 1 or 2 times needed in general to account for fills
         i64 b = am & 1;
         am = isArr(x)&&elNum(TI(x,elType)) ? b : 2-b;
-        } break;
+      } break;
       case n_not: { // 2 or 3 times needed for floats (e.g. 9.007199254740994e15)
         i64 b = am & 1;
         am = isArr(x)&&elInt(TI(x,elType)) ? b : am==-1 ? -1 : 2+b;
-        } break;
+      } break;
       case n_couple: return couple_powm(am, x);
       case n_select: if (am<0) goto gen; return select_powm(am, x);
       case n_transp: return transp_powm(am, x);
       case n_shiftb: case n_shifta:
-        if (am<0) goto gen; return shift_powm(rtid==n_shifta, am, x);
+        if (am<0) goto gen;
+        return shift_powm(rtid==n_shifta, am, x);
       case (u8)RTID_NONE:
         if (TY(f)==t_md2D) {
           Md2D* fd = c(Md2D,f);
@@ -170,7 +171,8 @@ B repeat_c1(Md2D* d, B x) {
             return repeat_c2(&dm, inc(fd->f), x);
           }
           if (PRTID(fd->m2)==n_after && isFun(fd->f) && RTID(fd->f)==n_join && !isCallable(fd->g)) {
-            if (am<0) goto gen; return join_powd(1, am, inc(fd->g), x);
+            if (am<0) goto gen;
+            return join_powd(1, am, inc(fd->g), x);
           }
         }
     }}
@@ -193,13 +195,13 @@ B repeat_c2(Md2D* d, B w, B x) {
       case n_rtack: am = 0; break;
       case n_ltack: am = am<0 ? -1 : 1; break;
       case n_floor: case n_ceil: case n_shape: case n_take:
-        if (am > 1) am = 1; break;
+        if (am > 1) { am = 1; } break;
       // For comparisons, first application returns a boolean
       // Then for atom e in w, e⊸Cmp is a monadic boolean function 01⊢¬
       // All these repeat at 2 iterations; all but ¬ are idempotent
       // For < and ≤, ¬ is not possible because e.g. (e<0) ≤ (e<1)
       case n_le: case n_lt:
-        if (am > 2) am = 2; break;
+        if (am > 2) { am = 2; } break;
       case n_gt: case n_ge: case n_eq: case n_ne: case n_feq: case n_fne:
         if (am<0) goto gen; // else fallthrough
       case n_sub: // 2 or 3 times needed, checked by bqn-smt
@@ -209,12 +211,14 @@ B repeat_c2(Md2D* d, B w, B x) {
       case n_transp: return transp_powd(am, w, x);
       case n_join: if (am<0) goto gen; return join_powd(0, am, w, x);
       case n_shiftb: case n_shifta:
-        if (am<0) goto gen; return shift_powd(rtid==n_shifta, am, w, x);
+        if (am<0) goto gen;
+        return shift_powd(rtid==n_shifta, am, w, x);
       case (u8)RTID_NONE:
         if (TY(f)==t_md1D) {
           Md1D* fd = c(Md1D,f); B ff = fd->f;
           if (PRTID(fd->m1)==n_swap && isFun(ff) && RTID(ff)==n_join) {
-            if (am<0) goto gen; return join_powd(1, am, w, x);
+            if (am<0) goto gen;
+            return join_powd(1, am, w, x);
           }
         } else if (TY(f)==t_md2D) {
           Md2D* fd = c(Md2D,f); B fg = fd->g;
@@ -235,7 +239,6 @@ B repeat_c2(Md2D* d, B w, B x) {
   REPEAT_GEN(CALL, dec(w));
   #undef CALL
 }
-#undef REPEAT_T
 
 
 NOINLINE B before_c1F(Md2D* d, B x, B f) { errMd(f); return c2(d->g, c1G(f,inc(x)), x); }
