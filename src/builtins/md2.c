@@ -155,7 +155,7 @@ B repeat_c1(Md2D* d, B x) {
       } break;
       case n_not: { // 2 or 3 times needed for floats (e.g. 9.007199254740994e15)
         i64 b = am & 1;
-        am = isArr(x)&&elInt(TI(x,elType)) ? b : am==-1 ? -1 : 2+b;
+        am = isArr(x)&&elInt(TI(x,elType)) ? b : am==-1 ? 1 : 2+b;
       } break;
       case n_couple: return couple_powm(am, x);
       case n_select: if (am<0) goto gen; return select_powm(am, x);
