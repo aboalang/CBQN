@@ -373,6 +373,11 @@ a←↕2 ⋄ ! "e" ≡ (↕10){b←a‿a‿a‿a‿a‿a‿a‿a‿a‿a ⋄ �
 
 # ⌽𝕩
 %USE rand ⋄ %USE var ⋄ {{! 𝕩 ≡ ⌽"Ai8"V⌽𝕩} 𝕩 r.Range 2}¨ ↕1000
+!"⌽𝕩: 𝕩 cannot be a unit" % ⌽ 2
+!"⌽𝕩: 𝕩 cannot be a unit" % ⌽ <"foo"
+!"⌽𝕩: 𝕩 cannot be a unit" % ⌽⍟2 <2
+!"⌽𝕩: 𝕩 cannot be a unit" % ⌽⍟¯3 2
+!"⌽𝕩: 𝕩 cannot be a unit" % ⌽⁼ 0
 
 # 𝕨⌽𝕩
 !"Integer out of range: 1e20" % %USE eqerr ⋄ ⟨1e20,⟨1e20⟩⟩ ⌽_eqerr ⟨↕10, ↕0, 0‿0⥊0, ⟨⟩⟩

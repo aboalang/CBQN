@@ -18,7 +18,6 @@
 !"≍⁼𝕩: Argument must have a leading axis of 1 (3 ≡ ≠𝕩)" % ≍⁼ "foo"
 !"≍⁼𝕩: Argument must have a leading axis of 1 (3 ≡ ≠𝕩)" % ≍⁼ 3‿1‿1⥊<"foo"
 
-!"⌽𝕩: 𝕩 cannot be a unit" % ⌽⁼ 0
 ⌽⁼ ↕10 %% 9-↕10
 ⟨⟩ ⌽⁼ <5 %% <5
 

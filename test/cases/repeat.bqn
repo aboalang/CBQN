@@ -109,3 +109,14 @@ a ← 3‿2‿1⥊↓"hello" ⋄ ! ⥊‿↑‿↓‿⌽‿⍉ ({1‿2𝕎⍟�
 (⌽↕4) ⍉⍟1111 ↕↕5 %% (⌽↕4)⍉↕↕5
 3‿4‿6‿1‿5‿2‿0 ⍉⍟180 ⥊⟜(↕×´)1+↕7 %% 2‿0‿4‿6‿3‿1‿5 ⍉ ⥊⟜(↕×´)1+↕7
 0‿0 ⍉⍟5 ⥊⟜(↕×´)3⌈↕7 %% (4836×↕3)+⌜↕6
+
+{"foo"⍟𝕩  "bar"}¨ ↕4 %% "bar"‿"foo"‿"foo"‿"foo"
+{"foo"⍟𝕩˜ "bar"}¨ ↕4 %% "bar"‿"foo"‿"foo"‿"foo"
+{"foo"⍟𝕩  "foo"}¨ ¯2+↕5 %% 5⥊<"foo"
+{"foo"⍟𝕩˜ "foo"}¨ ¯2+↕5 %% 5⥊<"foo"
+!"⁼: Inverse does not exist" % %USE r1 ⋄ "foo"_r1_ ¯3  "bar"
+!"⁼: Inverse does not exist" % %USE r1 ⋄ "foo"_r1_ ¯3˜ "bar"
+!"Calling a modifier" % %USE r1 ⋄ {¨}_r1_ 3  "foo"
+!"Calling a modifier" % %USE r1 ⋄ {¨}_r1_ 3˜ "foo"
+!"Cannot invert modifier" % %USE r1 ⋄ {{𝕘‿𝕩}}_r1_ ¯1  "foo"
+!"Cannot invert modifier" % %USE r1 ⋄ {{𝕘‿𝕩}}_r1_ ¯1˜ "foo"
