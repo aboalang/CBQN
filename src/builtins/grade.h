@@ -232,9 +232,9 @@ B SORT_C1(B t, B x) {
   usz n = IA(x);
   if (n <= 1 || FL_HAS(x,GRADE_UD(fl_asc,fl_dsc))) return x;
   if (RNK(x)!=1) return *SH(x)<=1? x : bqn_merge(SORT_C1(t, toCells(x)), 0);
-  u8 xe = TI(x,elType);
-  bool ch = elChr(xe);
   B r;
+  u8 xe = TI(x,elType);
+  usz xw = elWidth(xe);
   if (xe==el_bit) {
     u64* xp = bitany_ptr(x);
     u64* rp; r = m_bitarrv(&rp, n);
@@ -246,39 +246,41 @@ B SORT_C1(B t, B x) {
     for (; i<n0/64; i++) rp[i]=v0;
     if (i<e) rp[i++]=v0^(ones<<(n0%64));
     for (; i<e; i++) rp[i]=~v0;
-  } else if (xe==el_i8 || xe==el_c8) {
-    i8* xp = tyany_ptr(x);
-    i8* rp = m_tyarrv(&r, 1, n, el2t(xe));
-    if (n < 16) {
-      if (!ch) { INSERTION_SORT(i8); }
-      else     { INSERTION_SORT(u8); }
-    } else if (n < 256) {
-      RADIX_SORT_i8(u8, SORT);
-    } else {
-      COUNTING_SORT_i8;
-    }
-  } else if (xe==el_i16 || xe==el_c16) {
-    i16* xp = tyany_ptr(x);
-    i16* rp = m_tyarrv(&r, 2, n, el2t(xe));
-    if (n < 20) {
-      if (!ch) { INSERTION_SORT(i16); }
-      else     { INSERTION_SORT(u16); }
-    } else if (n < 256) {
-      RADIX_SORT_i16(u8, SORT,);
-    } else if (n < 1<<15 || (ch && n < 1<<18)) {
-      RADIX_SORT_i16(u32, SORT,);
-    } else {
-      COUNTING_SORT(i16);
-    }
-  } else if (xe==el_i32 || xe==el_c32) {
-    i32* xp = tyany_ptr(x);
-    i32* rp = m_tyarrv(&r, 4, n, el2t(xe));
-    if (n < 32) {
-      INSERTION_SORT(i32);
-    } else if (n < 256) {
-      RADIX_SORT_i32(u8, SORT,);
-    } else {
-      RADIX_SORT_i32(u32, SORT,);
+  } else if (xw <= 4) {
+    bool ch = elChr(xe);
+    void* xv = tyany_ptr(x);
+    void* rv = m_tyarrv(&r, xw, n, el2t(xe));
+    if (xw == 1) {
+      i8 *xp=xv, *rp=rv;
+      if (n < 16) {
+        if (!ch) { INSERTION_SORT(i8); }
+        else     { INSERTION_SORT(u8); }
+      } else if (n < 256) {
+        RADIX_SORT_i8(u8, SORT);
+      } else {
+        COUNTING_SORT_i8;
+      }
+    } else if (xw == 2) {
+      i16 *xp=xv, *rp=rv;
+      if (n < 20) {
+        if (!ch) { INSERTION_SORT(i16); }
+        else     { INSERTION_SORT(u16); }
+      } else if (n < 256) {
+        RADIX_SORT_i16(u8, SORT,);
+      } else if (n < 1<<15 || (ch && n < 1<<18)) {
+        RADIX_SORT_i16(u32, SORT,);
+      } else {
+        COUNTING_SORT(i16);
+      }
+    } else if (xw == 4) { // Assume signed: max c32 is 1114111 < 2^31
+      i32 *xp=xv, *rp=rv;
+      if (n < 32) {
+        INSERTION_SORT(i32);
+      } else if (n < 256) {
+        RADIX_SORT_i32(u8, SORT,);
+      } else {
+        RADIX_SORT_i32(u32, SORT,);
+      }
     }
   } else {
     B xf = getFillR(x);
@@ -340,7 +342,7 @@ B GRADE_CAT(c1)(B t, B x) {
     RADIX_SORT_i16(usz, GRADE, i32);
     goto decG_sq;
   }
-  if (xe==el_i32) { // No need to consider ch as c32 is 0≤x≤1114111
+  if (xe==el_i32) { // Assume signed: max c32 is 1114111 < 2^31
     i32* xp = tyany_ptr(x);
     i32 min=I32_MAX, max=I32_MIN;
     u32 sum=0;
