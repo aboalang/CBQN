@@ -231,13 +231,13 @@ B SORT_C1(B t, B x) {
   if (isAtm(x) || RNK(x)==0) thrM(GRADE_UD("∧","∨")"𝕩: 𝕩 cannot have rank 0");
   usz n = IA(x);
   if (n <= 1 || FL_HAS(x,GRADE_UD(fl_asc,fl_dsc))) return x;
-  if (RNK(x)!=1) return *SH(x)<=1? x : bqn_merge(SORT_C1(t, toCells(x)), 0);
+  if (RNK(x)!=1 && n!=*SH(x)) return *SH(x)<=1? x : bqn_merge(SORT_C1(t, toCells(x)), 0);
   B r;
   u8 xe = TI(x,elType);
   usz xw = elWidth(xe);
   if (xe==el_bit) {
     u64* xp = bitany_ptr(x);
-    u64* rp; r = m_bitarrv(&rp, n);
+    u64* rp; r = m_bitarrc(&rp, x);
     usz sum = bit_sum(xp, n);
     u64 n0 = GRADE_UD(n-sum, sum);
     u64 ones = -1ull;
@@ -249,7 +249,7 @@ B SORT_C1(B t, B x) {
   } else if (xw <= 4) {
     bool ch = elChr(xe);
     void* xv = tyany_ptr(x);
-    void* rv = m_tyarrv(&r, xw, n, el2t(xe));
+    void* rv = m_tyarrc(&r, xw, x, el2t(xe));
     if (xw == 1) {
       i8 *xp=xv, *rp=rv;
       if (n < 16) {
@@ -318,8 +318,9 @@ B GRADE_CAT(c1)(B t, B x) {
     sorted: decG(x); return n<=2? taga(ptr_inc(bitUD[n])) : C1(ud,m_usz(n));
   }
   if (xr > 1) {
+    usz ia = n;
     n = *SH(x); if (n<=1) goto sorted;
-    x = toCells(x);
+    if (ia!=n) x = toCells(x);
   }
   if (n == 2) {
     SGetU(x);
