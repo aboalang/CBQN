@@ -1581,12 +1581,15 @@ B reverse_powd(i64 am, B w, B x) {
     if (IA(x)==0) return x;
     return C2(reverse, m_f64(modmul(am, wi, *SH(x))), x);
   }
-  // Empty and erroring cases don't depend on w values
+  // Leave w alone and call once for empty x, result is the same
+  // Also don't do any adjustment logic for erroring cases that ignore values in w (don't want to throw a different message)
   if (isArr(x) && IA(x)!=0 && RNK(w)<=1 && IA(w)<=RNK(x)) {
     i64 bd = 1<<(53-31); // <=bd times i32 gives an integer-valued float
-    if (elInt(TI(w,elType)) && am<=bd && am>=-bd) {
+    if (MAY_F(elInt(TI(w,elType)) && am<=bd && am>=-bd)) {
       w = C2(mul, m_f64(am<0?-am:am), w);
     } else {
+      u8 we; w = squeeze_numTry(w, &we, SQ_NUM);
+      if (!elNum(we)) thrF("𝕨⌽%U𝕩: 𝕨 contained non-number", am<0?"⁼":"");
       f64* rp; B r = m_f64arrc(&rp, w);
       SGetU(w); usz wia = IA(w);
       usz* xsh = SH(x);
@@ -1686,8 +1689,7 @@ B shift_powm(bool aft, i64 am, B x) {
   if (isAtm(x) || RNK(x)==0) thrF("%c𝕩: 𝕩 cannot be a unit", c);
   usz ia = IA(x);
   if (ia==0) return x;
-  B xf = getFillR(x);
-  if (noFill(xf)) thrF("%c𝕩: Fill element of 𝕩 not known", c);
+  B xf = getFillE(x, aft? "«𝕩: Fill element of 𝕩 not known" : "»𝕩: Fill element of 𝕩 not known");
   usz n = *SH(x);
   if (am > n) {
     Arr* r = arr_shCopy(reshape_one(ia, xf), x);
