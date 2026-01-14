@@ -1691,7 +1691,7 @@ B shift_powm(bool aft, i64 am, B x) {
   if (ia==0) return x;
   B xf = getFillE(x, aft? "«𝕩: Fill element of 𝕩 not known" : "»𝕩: Fill element of 𝕩 not known");
   usz n = *SH(x);
-  if (am > n) {
+  if (am >= n) {
     Arr* r = arr_shCopy(reshape_one(ia, xf), x);
     decG(x); return taga(r);
   }
