@@ -1623,7 +1623,7 @@ B drop_powd(i64 am, B w, B x) {
       rsh[i] = l<wi? 0 : l-wi;
     }
     dec(w);
-    return taga(arr_shReplace(customizeShape(x), rr, sh));
+    return taga(arr_shSetUG(customizeShape(x), rr, sh));
   } else if (isAtm(w)) {
     i64 wi = o2i64(w);
     if (mulOn(wi, am)) wi = USZ_MAX;
