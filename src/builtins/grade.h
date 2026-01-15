@@ -3,13 +3,13 @@
 // Sort and Grade
 // Trivial results on empty, single-cell, or flagged-sorted 𝕩
 //   COULD reverse to sort flat 𝕩 with flag in opposite direction
-// Small ≠𝕩 sort (not grade): insertion sort
-//   SHOULD implement insertion grade
-// Small range sort (not grade): counting sort
+// Small ≠𝕩: insertion sort
+// Long ≤2-byte sort (not grade): counting sort
+//   Length threshold is around the type's maximum range
 //   Count 1s for booleans
 //   Large range/length ("sparse") uses scan: plus, or Singeli max/min
 //   COULD range check 4-byte 𝕩 to try counting sort
-// 4-byte grade checks range and sum
+// 4-byte grade checks range and sum (before even trying insertion sort)
 //   If consistent with a permutation, grade as one and verify after
 //   If small-range, grade with bucket sort
 // Other 1-, 2-, 4-byte cases: radix sort
@@ -62,23 +62,24 @@
 #define SORT_TYPE BI32p
 #include "sortTemplate.h"
 
-#define SORT_CMP(W, X) (GRADE_NEG ((W).k - (i64)(X).k))
-#define SORT_NAME GRADE_CAT(IP)
-#define SORT_TYPE I32I32p
-#include "sortTemplate.h"
-
 
 #define LT GRADE_UD(<,>)
 #define FOR(I,MAX) GRADE_UD(for (usz I=0; I<MAX; I++), \
                             for (usz I=MAX; I--; ))
 
-#define INSERTION_SORT(T) \
-  rp[0] = xp[0];                                             \
-  for (usz i=0; i<n; i++) {                                  \
-    usz j=i, jn; T xi=xp[i], rj;                             \
-    while (0<j && xi LT (rj=rp[jn=j-1])) { rp[j]=rj; j=jn; } \
-    rp[j] = xi;                                              \
+// Insertion sort
+#define INS_SORT( J, I, V) rp[J]=V;
+#define INS_GRADE(J, I, V) xs[J]=V; rp[J]=I;
+#define INSERTION_SORT(T, TYP) \
+  INS_##TYP(0, 0, xp[0])                               \
+  for (usz i=0; i<n; i++) {                            \
+    usz j=i, jn; T xi=xp[i], rj;                       \
+    while (0<j && xi LT (rj=CHOOSE_SG_##TYP(rp,xs)[jn=j-1])) { \
+      INS_##TYP(j, rp[jn], rj) j=jn;                   \
+    }                                                  \
+    INS_##TYP(j, i, xi)                                \
   }
+
 
 // Counting sort
 #define COUNTING_SORT(T) \
@@ -253,8 +254,8 @@ B SORT_C1(B t, B x) {
     if (xw == 1) {
       i8 *xp=xv, *rp=rv;
       if (n < 16) {
-        if (!ch) { INSERTION_SORT(i8); }
-        else     { INSERTION_SORT(u8); }
+        if (!ch) { INSERTION_SORT(i8, SORT); }
+        else     { INSERTION_SORT(u8, SORT); }
       } else if (n < 256) {
         RADIX_SORT_i8(u8, SORT);
       } else {
@@ -263,8 +264,8 @@ B SORT_C1(B t, B x) {
     } else if (xw == 2) {
       i16 *xp=xv, *rp=rv;
       if (n < 20) {
-        if (!ch) { INSERTION_SORT(i16); }
-        else     { INSERTION_SORT(u16); }
+        if (!ch) { INSERTION_SORT(i16, SORT); }
+        else     { INSERTION_SORT(u16, SORT); }
       } else if (n < 256) {
         RADIX_SORT_i16(u8, SORT,);
       } else if (n < 1<<15 || (ch && n < 1<<18)) {
@@ -275,7 +276,7 @@ B SORT_C1(B t, B x) {
     } else if (xw == 4) { // Assume signed: max c32 is 1114111 < 2^31
       i32 *xp=xv, *rp=rv;
       if (n < 32) {
-        INSERTION_SORT(i32);
+        INSERTION_SORT(i32, SORT);
       } else if (n < 256) {
         RADIX_SORT_i32(u8, SORT,);
       } else {
@@ -292,7 +293,6 @@ B SORT_C1(B t, B x) {
   return FL_SET(r, CAT(fl,GRADE_UD(asc,dsc)));
 }
 #undef SORT_C1
-#undef INSERTION_SORT
 #undef COUNTING_SORT
 #undef COUNTING_SORT_i8
 #undef WRITE_DENSE
@@ -332,18 +332,29 @@ B GRADE_CAT(c1)(B t, B x) {
   if (xe==el_bit) return grade_bool(x, n, GRADE_UD(1,0));
   if (n>I32_MAX) thrM(GRADE_CHR"𝕩: 𝕩 too large");
   i32* rp; B r = m_i32arrv(&rp, n);
+  usz xw = elWidth(xe);
   bool ch = elChr(xe);
-  if (ch) xe += el_i8-el_c8;
-  if (xe==el_i8 && n>8) {
+  if (xw == 1) {
+    #define INSERTION_GRADES(W) \
+      TALLOC(i##W, xsi, n);                                          \
+      if (!ch) { i##W* xs=       xsi; INSERTION_SORT(i##W, GRADE); } \
+      else     { u##W* xs=(u##W*)xsi; INSERTION_SORT(u##W, GRADE); } \
+      TFREE(xsi);
     i8* xp = tyany_ptr(x);
-    RADIX_SORT_i8(usz, GRADE);
-    goto decG_sq;
-  } else if (xe==el_i16 && n>16) {
+    if (n < 24) {
+      INSERTION_GRADES(8);
+    } else {
+      RADIX_SORT_i8(usz, GRADE);
+    }
+  } else if (xw == 2) {
     i16* xp = tyany_ptr(x);
-    RADIX_SORT_i16(usz, GRADE, i32);
-    goto decG_sq;
-  }
-  if (xe==el_i32) { // Assume signed: max c32 is 1114111 < 2^31
+    if (n < 48) {
+      INSERTION_GRADES(16);
+    } else {
+      RADIX_SORT_i16(usz, GRADE, i32);
+    }
+    #undef INSERTION_GRADES
+  } else if (xw == 4) { // Assume signed: max c32 is 1114111 < 2^31
     i32* xp = tyany_ptr(x);
     i32 min=I32_MAX, max=I32_MIN;
     u32 sum=0;
@@ -367,27 +378,18 @@ B GRADE_CAT(c1)(B t, B x) {
       for (usz i = 0; i < n; i++) c0o[xp[i]]++;
       usz s=0; FOR (i, range) { usz p=s; s+=c0[i]; c0[i]=p; }
       for (usz i = 0; i < n; i++) rp[c0o[xp[i]]++] = i;
-      TFREE(c0); goto decG_sq;
-    }
-    if (n > 40) {
+      TFREE(c0);
+    } else if (n < 64) {
+      TALLOC(i32, xs, n);
+      INSERTION_SORT(i32, GRADE);
+      TFREE(xs);
+    } else {
       RADIX_SORT_i32(usz, GRADE, i32);
-      goto decG_sq;
     }
-    
-    TALLOC(I32I32p, tmp, n);
-    vfor (usz i = 0; i < n; i++) {
-      tmp[i].v = i;
-      tmp[i].k = xp[i];
-    }
-    CAT(GRADE_CAT(IP),tim_sort)(tmp, n);
-    vfor (usz i = 0; i < n; i++) rp[i] = tmp[i].v;
-    TFREE(tmp);
-    goto decG_sq;
+  } else {
+    SLOW1(GRADE_CHR"𝕩", x);
+    generic_grade(x, n, r, rp, CAT(GRADE_CAT(BP),tim_sort));
   }
-  
-  SLOW1(GRADE_CHR"𝕩", x);
-  generic_grade(x, n, r, rp, CAT(GRADE_CAT(BP),tim_sort));
-  goto decG_sq;
   
   decG_sq:;
   if (n<=(I8_MAX+1)) r = taga(cpyI8Arr(r));
@@ -658,6 +660,9 @@ B GRADE_CAT(c2)(B t, B w, B x) {
 #undef INC
 #undef ROFF
 #undef PRE64
+#undef INSERTION_SORT
+#undef INS_SORT
+#undef INS_GRADE
 #undef CHOOSE_SG_SORT
 #undef CHOOSE_SG_GRADE
 #undef RADIX_SORT_i8
