@@ -534,13 +534,15 @@ static B invert_transp_w(B w, ur xr) {
     TALLOC(ur, p, xr);
     for (usz i=0; i<xr; i++) p[i]=xr;
     usz max = 0;
+    bool dup = false;
     for (usz i=0; i<wia; i++) {
       usz a=o2s(GetU(w, i));
       if (a>=xr) thrF("𝕨⍉⁼𝕩: Axis %s does not exist (%i≡=𝕩)", a, xr);
-      if (p[a]!=xr) { TFREE(p); decG(w); return bi_N; } // Handled by caller
+      dup |= p[a]!=xr;
       max = a>max? a : max;
       p[a] = i;
     }
+    if (dup) { TFREE(p); decG(w); return bi_N; } // Handled by caller
     decG(w);
     usz n = max+1;
     i32* wp; w = m_i32arrv(&wp, n);
