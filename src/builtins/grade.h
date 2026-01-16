@@ -22,8 +22,7 @@
 
 // Bins
 // Length 0 or 1 𝕨: trivial, or comparison
-// Stand-alone 𝕨 sortedness check
-//   SHOULD vectorize sortedness check on lists of numbers
+// Stand-alone 𝕨 sortedness check, with Singeli SIMD
 // Mixed integer and character arguments gives all 0 or ≠𝕨
 // Non-Singeli, integers and characters:
 //   4-byte branchless binary search, 4-byte output
