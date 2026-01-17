@@ -2,11 +2,11 @@
 // In the notes 𝕨 might indicate 𝕩 for Indices too
 
 // Boolean 𝕨 (Where/Compress) general case based on result type width
-// Size 1: compress 64-bit units, possibly SIMD
-//   pext if BMI2 is present
-//   Pairwise combination, SIMD if AVX2
-//   SIMD shift-by-offset if there's CLMUL but no AVX2
-//     SHOULD use with polynomial multiply in NEON
+// Size 1: compress 64-bit units, packed in SIMD registers if possible
+//   Scalar pext if BMI2 is present
+//   Pairwise combination on AVX2 and NEON
+//     COULD use 8-bit polynomial multiply for NEON base case
+//   Otherwise, shift using power-of-two masks from xor and sum-scans
 //   COULD return boolean result from Where
 // Size 8, 16, 32, 64: mostly table-based
 //   Where: direct table lookup, widening for 16 and 32 if available

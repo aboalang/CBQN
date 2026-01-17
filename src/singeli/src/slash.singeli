@@ -323,7 +323,8 @@ def pext_popc{x:T, m:T} = {
 
 def pext_width {if hasarch{'AVX2'}} = 4
 def thresh_bool{if hasarch{'AVX2'}} = 64
-def pext_popc{x:T, m:T if hasarch{'AVX2'}} = {
+def pext_popc{x:T, m:T if hasarch{'AVX2'} or hasarch{'AARCH64'}} = {
+  def __shr{a:U=[_]_, sh:U if hasarch{'AARCH64'}} = a << -sh
   def w = scalwidth{T}
   def scal{v} = if (vect{T}) T**v else v
   def lowbits{w,k} = base{1<<k, cdiv{w,k}**1}
@@ -340,7 +341,7 @@ def pext_popc{x:T, m:T if hasarch{'AVX2'}} = {
       z0 := z & low
       zm := z>>1 & low
       tup{ x - (x>>1 & z0), zm + z0 }
-    } else if (hasarch{'AVX2'} and vect{T} and k >= 32) {
+    } else if (vect{T} and ((hasarch{'AVX2'} and k>=32) or (hasarch{'AARCH64'} and k>=8))) {
       # We have variable shifts at these sizes
       lh := scal{low_s*tail{h}}
       zl := z & lh
