@@ -1000,18 +1000,33 @@ B mnvmExecBodyInplace(Body* body, Scope* sc) {
 
 
 #if REPL_INTERRUPT
+#ifndef _WIN32
 #include <signal.h>
+#else
+#include <windows.h>
+#endif
 volatile int cbqn_interrupted;
 static void interrupt_sigHandler(int x) {
   if (cbqn_interrupted) abort(); // shouldn't happen
   cbqn_takeInterrupts(false);
   cbqn_interrupted = 1;
 }
+#ifdef _WIN32
+static BOOL WINAPI interrupt_sigHandlerWin(DWORD ctrlType) {
+  (void)ctrlType;
+  interrupt_sigHandler(0);
+  return TRUE;
+}
+#endif
 bool cbqn_takeInterrupts(bool b) { // returns if succeeded
   if (!b) cbqn_interrupted = 0; // can be left dangling if nothing caught it
+#ifndef _WIN32
   struct sigaction act = {};
   act.sa_handler = b? interrupt_sigHandler : SIG_DFL;
   return sigaction(SIGINT, &act, NULL) == 0;
+#else
+  return SetConsoleCtrlHandler(interrupt_sigHandlerWin, b);
+#endif
 }
 
 NOINLINE NORETURN void cbqn_onInterrupt() {
