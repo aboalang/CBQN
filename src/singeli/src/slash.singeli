@@ -274,29 +274,51 @@ def pext_popc{x:T, m:T} = {
   def h4 = 4!2b0011
   def h2 = 2!2b01
   # Sum bottom-up
-  a1 := ~m;           b1 := (a1>>1)&h2
-  a2 := a1 - b1;      b2 := (a2>>2)&h4
-  a4 := (a2&h4) + b2; b4 := (a4>>4)&h8
-  a8 := (a4&h8) + b4
-  a  := if (not vect{T}) { a8 * 8!0x01 } else {
-    a16:=a8+a8<<8; a32:=a16+a16<<16; a32+a32<<32
+  a1 := ~m;      b1 := (a1>>1)&h2
+  a2 := a1 - b1; b2 := (a2>>2)&h4
+  def {b4, a8} = if (not (hasarch{'SSSE3'} or hasarch{'AARCH64'})) {
+    a4 := (a2&h4) + b2; b4 := (a4>>4)&h8
+    a8 := (a4&h8) + b4
+    tup{b4, a8}
+  } else {
+    def sums = fold{flat_table{+,...}, 4**iota{2}}
+    sv := T~~make{re_el{u8,T}, cycle{width{T}/8, sums}}
+    def sum4{x} = shuf{[16]u8, sv, re_el{u8, x&h8}}
+    b4 := sum4{a1>>4}
+    tup{b4, b4 + sum4{a1}}
   }
+  def shop{op,arg,ss} = fold{{x,s} => op{x,x<<s}, arg, ss}
+  s8 := if (not vect{T}) a8 * 8!0x01 else shop{+, a8, tup{8,16,32}}
+  # Skip ahead instead of getting from s2 to cut the long dependency
+  def use_clmul = hasarch{'PCLMUL'} and 2==vcount{T}
+  def xor_scan = if (not use_clmul) shop{^, ., 1<<iota{6}} else {
+    c := hom_ones{T}
+    {x} => zip{...each{clmul{x,c,.}, iota{2}}, 0}
+  }
+  s1 := xor_scan{a1}
   # Fill out, top-down
-  s4 := ((a -b4) | 8!0xf8) & ((a<<4) | 8!0x8f)
-  s2 := ((s4-b2) & h4) | (s4&h4)<<2
-  s1 := if (hasarch{'PCLMUL'} and 2==vcount{T}) zip{...each{clmul{a1,hom_ones{T},.}, iota{2}}, 0}
-   else ((s2^b1) & h2) | (s2&h2)<<1
+  {m2, l4} := if (use_clmul) {
+    def q8 = 8!0x04
+    tup{xor_scan{a1&~s1}, ((s8-b4) & q8)>>2 | (s8&q8)<<2}
+  } else {
+    def q4 = 4!2b0010
+    s4 := ((s8-b4) | 8!0xf8) & ((s8<<4) | 8!0x8f)
+    t2 := ((s4-b2) & q4) | (s4&q4)<<2
+    tup{t2 | t2>>1, s4>>2 & 4!0x1}
+  }
   # Shifts
   r := x & m
   def shift_r{sh, b} = { r = (r&~b) | (r&b)>>sh }
-                         shift_r{1, s1}
-  t2 := s2 ^ (s2&h2);    shift_r{2, t2 | t2>>1}
-  l4 := (s4>>2) & 4!0x1; shift_r{4, (l4<<4) - l4}
-  @unroll (k from 3 to 6) {
-    l := (a>>k) & 8!0x01
-    shift_r{1<<k, (l<<8) - l}
+  shift_r{1, s1}
+  shift_r{2, m2}
+  shift_r{4, (l4<<4) - l4}
+  def vsh = if (vect{T}) 4 else 6
+  @unroll (k from 3 to vsh) {
+    l := (s8>>k) & 8!0x01
+    shift_r{1<<k, if (vect{T}) T~~(-re_el{u8,l}) else (l<<8) - l}
   }
-  tup{r, scal{64} - a>>56}
+  @unroll (k from vsh to 6) shift_r{1<<k, T~~(re_el{i16,s8}<<(7-k)>>15)}
+  tup{r, scal{64} - s8>>56}
 }
 
 def pext_width {if hasarch{'AVX2'}} = 4
