@@ -363,8 +363,8 @@ a←↕2 ⋄ ! "e" ≡ (↕10){b←a‿a‿a‿a‿a‿a‿a‿a‿a‿a ⋄ �
 !"𝕨«𝕩: Lengths not matchable (⟨2⟩ ≡ ≢𝕨, 3‿3 ≡ ≢𝕩)" % 1‿2«↕3‿3
 !"𝕨«𝕩: =𝕨 must be =𝕩 or ¯1+=𝕩 (0≡=𝕨, 3≡=𝕩)" % 1«↕2‿2‿2
 !"𝕨«𝕩: =𝕨 must be =𝕩 or ¯1+=𝕩 (2≡=𝕨, 1≡=𝕩)" % (↕2‿2)«1‿2
-!"«𝕩: 𝕩 cannot be a scalar" % «0
-!"»𝕩: 𝕩 cannot be a scalar" % »<0
+!"«𝕩: 𝕩 cannot be a unit" % «0
+!"»𝕩: 𝕩 cannot be a unit" % »<0
 
 # ⍉𝕩
 %USE rand ⋄ %USE eqvar ⋄ ⍉_eqvar 2‿3‿4 r.Range 2
@@ -373,6 +373,11 @@ a←↕2 ⋄ ! "e" ≡ (↕10){b←a‿a‿a‿a‿a‿a‿a‿a‿a‿a ⋄ �
 
 # ⌽𝕩
 %USE rand ⋄ %USE var ⋄ {{! 𝕩 ≡ ⌽"Ai8"V⌽𝕩} 𝕩 r.Range 2}¨ ↕1000
+!"⌽𝕩: 𝕩 cannot be a unit" % ⌽ 2
+!"⌽𝕩: 𝕩 cannot be a unit" % ⌽ <"foo"
+!"⌽𝕩: 𝕩 cannot be a unit" % ⌽⍟2 <2
+!"⌽𝕩: 𝕩 cannot be a unit" % ⌽⍟¯3 2
+!"⌽𝕩: 𝕩 cannot be a unit" % ⌽⁼ 0
 
 # 𝕨⌽𝕩
 !"Integer out of range: 1e20" % %USE eqerr ⋄ ⟨1e20,⟨1e20⟩⟩ ⌽_eqerr ⟨↕10, ↕0, 0‿0⥊0, ⟨⟩⟩
@@ -387,9 +392,9 @@ a←↕2 ⋄ ! "e" ≡ (↕10){b←a‿a‿a‿a‿a‿a‿a‿a‿a‿a ⋄ �
 !"𝕨⌽𝕩: 𝕨 must have rank at most 1 (1‿1 ≡ ≢𝕨)" %  %USE eqerr ⋄ ⟨≍⋈1⟩ ⌽ _eqerr ⟨2‿2⥊1, ↕1⟩
 !"𝕨⌽⁼𝕩: 𝕨 must have rank at most 1 (1‿1 ≡ ≢𝕨)" % %USE eqerr ⋄ ⟨≍⋈1⟩ ⌽⁼_eqerr ⟨2‿2⥊1, ↕1⟩
 !"𝕨⌽𝕩: Length of list 𝕨 must be at most rank of 𝕩 (3 ≡ ≠𝕨, ⟨⟩ ≡ ≢𝕩⟩" % 1‿2‿3 ⌽ 1
-!"𝕨⌽⁼𝕩: 𝕩 must have rank at least 1" % 1‿2‿3 ⌽⁼ 1
+!"𝕨⌽⁼𝕩: 𝕩 cannot be an atom" % 1‿2‿3 ⌽⁼ 1
 !"𝕨⌽𝕩: Length of list 𝕨 must be at most rank of 𝕩 (3 ≡ ≠𝕨, ⟨3⟩ ≡ ≢𝕩⟩" % 1‿2‿3 ⌽ ↕3
-!"𝕨⌽⁼𝕩: 𝕩 must have rank at least 1" % ⟨⟩ ⌽⁼ 1
+!"𝕨⌽⁼𝕩: 𝕩 cannot be an atom" % ⟨⟩ ⌽⁼ 1
 (<⁼ ⟨⟩⌽{a⇐1‿2}).a %% 1‿2
 1‿2‿3 ⌽ 4‿4‿4‿4⥊↕256 %% F←{(4|𝕨+↕4)⊏𝕩} ⋄ 3 F⎉2 2 F˘ 1 F 4‿4‿4‿4⥊↕256
 (1+1e15) ⌽ ↕10 %% (1+↕9)∾0

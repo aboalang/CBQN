@@ -13,13 +13,13 @@
 ≍⁼ ⋈5 %% <5
 ≍⁼ 1‿2‿3⥊↕6 %% 2‿3⥊↕6
 ≍⁼ 1‿2⥊↕2 %% ↕2
-!"≍⁼𝕩: Argument must have a leading axis of 1" % ≍⁼ 5
-!"≍⁼𝕩: Argument must have a leading axis of 1" % ≍⁼ <"foo"
-!"≍⁼𝕩: Argument must have a leading axis of 1" % ≍⁼ "foo"
-!"≍⁼𝕩: Argument must have a leading axis of 1" % ≍⁼ 3‿1‿1⥊<"foo"
+!"≍⁼𝕩: Argument must have a leading axis of 1 (0 ≡ =𝕩)" % ≍⁼ 5
+!"≍⁼𝕩: Argument must have a leading axis of 1 (0 ≡ =𝕩)" % ≍⁼ <"foo"
+!"≍⁼𝕩: Argument must have a leading axis of 1 (3 ≡ ≠𝕩)" % ≍⁼ "foo"
+!"≍⁼𝕩: Argument must have a leading axis of 1 (3 ≡ ≠𝕩)" % ≍⁼ 3‿1‿1⥊<"foo"
 
-!"⌽𝕩: 𝕩 cannot be a unit" % ⌽⁼ 0
 ⌽⁼ ↕10 %% 9-↕10
+⟨⟩ ⌽⁼ <5 %% <5
 
 !"⍉⁼𝕩: 𝕩 must not be an atom" % ⍉⁼ 3
 !"𝕨⍉⁼𝕩: 𝕩 must not be an atom" % 0 ⍉⁼ 3

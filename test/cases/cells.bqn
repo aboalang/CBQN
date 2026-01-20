@@ -57,7 +57,7 @@
 !"≍𝕩: Result rank too large (255≡=𝕩)" % ≍⎉∞ 0⥊˜255⥊1
 !"𝕨«𝕩: Lengths not matchable (⟨6⟩ ≡ ≢𝕨, 1‿1 ≡ ≢𝕩)" % ("abc"∾"def")«˘○(3/≍)≍"a"
 !"𝕨«𝕩: =𝕨 must be =𝕩 or ¯1+=𝕩 (0≡=𝕨, 2≡=𝕩)" % 1«˘↕2‿2‿2
-!"»𝕩: 𝕩 cannot be a scalar" % »⎉0 2‿3‿1⥊↕6
+!"»𝕩: 𝕩 cannot be a unit" % »⎉0 2‿3‿1⥊↕6
 !"⌽𝕩: 𝕩 cannot be a unit" % ⌽˘↕10
 !"Expected integer, got 1.5" % 1.5↑˘↕2‿3‿2
 !"𝕨↑𝕩: 𝕨 must have rank at most 1 (1‿2 ≡ ≢𝕨)" % (≍1‿2)⊸↑˘↕2‿3‿2
@@ -132,10 +132,10 @@
 ≍⁼⎉¯2 4‿2‿1‿3‿2⥊↕48 %% 4‿2‿3‿2⥊↕48
 ≍⁼⎉1 ⋈"foo" %% <"foo"
 ≍⁼⎉1 ⋈10 %% <10
-!"≍⁼𝕩: Argument must have a leading axis of 1" % ≍⁼˘ 1‿10⥊2
-!"≍⁼𝕩: Argument must have a leading axis of 1" % ≍⁼⎉¯2 1‿1‿2‿1‿1⥊1
-!"≍⁼𝕩: Argument must have a leading axis of 1" % ≍⁼⎉¯2 1‿1⥊10
-!"≍⁼𝕩: Argument must have a leading axis of 1" % ≍⁼⎉0 ⋈10
+!"≍⁼𝕩: Argument must have a leading axis of 1 (10 ≡ ≠𝕩)" % ≍⁼˘ 1‿10⥊2
+!"≍⁼𝕩: Argument must have a leading axis of 1 (2 ≡ ≠𝕩)" % ≍⁼⎉¯2 1‿1‿2‿1‿1⥊1
+!"≍⁼𝕩: Argument must have a leading axis of 1 (0 ≡ =𝕩)" % ≍⁼⎉¯2 1‿1⥊10
+!"≍⁼𝕩: Argument must have a leading axis of 1 (0 ≡ =𝕩)" % ≍⁼⎉0 ⋈10
 
 %USE eqvar ⋄ (100⥊5↑1) ≍˘_eqvar 100⥊7↑1 %% 0=(↕100) |˜⌜ 5‿7
 %USE eqvar ⋄ ('a'+100⥊↕5) ≍˘_eqvar 100⥊↕7 %% 'a'‿0 +⎉1 (↕100) |˜⌜ 5‿7

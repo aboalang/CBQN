@@ -30,13 +30,13 @@
 // COULD convert boolean to integer for some axis reorderings
 // SHOULD have a small-subarray transposer using one or a few shuffles
 
-//  ⍉⁼𝕩: data movement of ⍉ with different shape logic
+//  ⍉⁼𝕩, ⍉⍟n: data movement of ⍉ with different shape logic
 // 𝕨⍉⁼𝕩: compute inverse 𝕨, length 1+⌈´𝕨
 // Under Transpose supports invertible cases
 //   SHOULD implement Under with duplicate axes, maybe as Under Select
 // ⍉˘𝕩 and k⍉˘𝕩 for number k: convert to 0‿a⍉𝕩
 //   SHOULD convert ⍉ with rank to a Reorder Axes call
-// COULD implement fast ⍉⍟n
+//   COULD recognize ⍉ with rank+repeat combinations
 
 #include "../core.h"
 #include "../utils/mut.h"
@@ -161,8 +161,6 @@ Arr* join_cells(B w, B x, ur k) { // consumes w,x; join k-cells, 𝕨 ∾○⥊�
   decG(w); decG(x);
   return r;
 }
-
-B join_c2(B, B, B);
 
 static void transpose_move(void* rv, void* xv, u8 xe, usz w, usz h) {
   assert(xe!=el_bit); assert(xe!=el_B);
@@ -477,6 +475,44 @@ B transp_im(B t, B x) {
   decG(x); return taga(r);
 }
 
+SHOULD_INLINE ur imod(i64 i, ur d) {
+  if ((u64)i >= d) { i%= d; if (i<0) i+= d; } // Like sfns.c WRAP_ROT
+  return (ur)i;
+}
+
+B transp_powm(i64 am, B x) { // consumes x; ⍉⍟am 𝕩
+  if (RARE(isAtm(x))) {
+    assert(am != 0);
+    if (am < 0) thrM("⍉⁼𝕩: 𝕩 must not be an atom");
+    return m_unit(x);
+  }
+  ur xr = RNK(x);
+  if (xr<=1) return x;
+  ur k = imod(am, xr), nk = xr-k;
+  #define WRITE_SH(SH) \
+    shcpy(SH, xsh+k, nk); \
+    shcpy(SH+nk, xsh, k)
+  
+  usz ia = IA(x);
+  usz* xsh = SH(x);
+  usz h = shProd(xsh, 0, k);
+  if (ia==0 || h==1 || h==ia) {
+    Arr* r = cpyWithShape(x);
+    ShArr* sh = m_shArr(xr);
+    WRITE_SH(sh->a);
+    arr_shReplace(r, xr, sh);
+    return taga(r);
+  }
+  usz w = shProd(xsh, k, xr);
+  
+  Arr* r = transpose_noshape(&x, ia, w, h);
+  
+  usz* rsh = arr_shAlloc(r, xr);
+  WRITE_SH(rsh);
+  decG(x); return taga(r);
+  #undef WRITE_SH
+}
+
 B transp_uc1(B t, B o, B x) {
   return transp_im(bi_z, c1(o, transp_c1(t, x)));
 }
@@ -498,13 +534,15 @@ static B invert_transp_w(B w, ur xr) {
     TALLOC(ur, p, xr);
     for (usz i=0; i<xr; i++) p[i]=xr;
     usz max = 0;
+    bool dup = false;
     for (usz i=0; i<wia; i++) {
       usz a=o2s(GetU(w, i));
       if (a>=xr) thrF("𝕨⍉⁼𝕩: Axis %s does not exist (%i≡=𝕩)", a, xr);
-      if (p[a]!=xr) { TFREE(p); decG(w); return bi_N; } // Handled by caller
+      dup |= p[a]!=xr;
       max = a>max? a : max;
       p[a] = i;
     }
+    if (dup) { TFREE(p); decG(w); return bi_N; } // Handled by caller
     decG(w);
     usz n = max+1;
     i32* wp; w = m_i32arrv(&wp, n);
@@ -525,6 +563,90 @@ B transp_ucw(B t, B o, B w, B x) {
   B wi = invert_transp_w(inc(w), isAtm(x)? 0 : RNK(x));
   if (q_N(wi)) return def_fn_ucw(t, o, w, x); // Duplicate axes
   return C2(transp, wi, c1(o, C2(transp, w, x)));
+}
+
+B transp_powd(i64 am, B w, B x) {
+  if (am == -1) return transp_ix(bi_z, w, x);
+  char* mod = am<0? "⁼" : "";
+  if (isAtm(x)) {
+    if (am < 0) thrM("𝕨⍉⁼𝕩: 𝕩 must not be an atom");
+    x = m_unit(x);
+  }
+  ur xr = RNK(x);
+  if (isAtm(w)) {
+    if (xr<1) thrF("𝕨⍉%U𝕩: Length of 𝕨 must be at most rank of 𝕩", mod);
+    usz a=o2s(w);
+    if (a>=xr) thrF("𝕨⍉%U𝕩: Axis %s does not exist (%i≡=𝕩)", mod, a, xr);
+    usz m = a+1; // Number of axes rotated
+    if (m == xr) return transp_powm(am, x);
+    ur k = imod(am, m);
+    if (k == 0) return x;
+    i32* wp; w = m_i32arrv(&wp, k);
+    PLAINLOOP for (usz i=0; i<k; i++) wp[i] = i+m-k;
+  } else {
+    if (RNK(w)>1) thrF("𝕨⍉%U𝕩: 𝕨 must have rank at most 1", mod);
+    usz wia = IA(w);
+    if (wia==0) { decG(w); return x; }
+    if (xr<wia) thrF("𝕨⍉%U𝕩: Length of 𝕨 must be at most rank of 𝕩", mod);
+    SGetU(w)
+    TALLOC(ur, alloc, 3*xr);
+    ur* p = alloc; ur* pi = p+xr; // permutation, inverse
+    for (usz i=0; i<xr; i++) pi[i]=xr;
+    usz dup = 0, max = 0, id = 0;
+    for (usz i=0; i<wia; i++) {
+      usz a=o2s(GetU(w, i));
+      if (a>=xr) thrF("𝕨⍉%U𝕩: Axis %s does not exist (%i≡=𝕩)", mod, a, xr);
+      dup += pi[a]!=xr;
+      id += i==a;
+      max = a>max? a : max;
+      p[i] = a; pi[a] = i;
+    }
+    if (dup) {
+      if (am < 0) thrM("𝕨⍉⁼𝕩: Duplicate axes");
+      TFREE(alloc);
+      PLAINLOOP while (am--) x = C2(transp, incG(w), x); // runs at most RNK(x) times
+      decG(w); return x;
+    }
+    decG(w);
+    usz n = max+1;
+    ur chg = n - id;
+    if (chg <= 4) { // cycle lengths, hence period, divide chg until 5=2+3
+      if      (chg <  2) am = 0; // can't be 1, not that it matters
+      else if (chg != 3) am&= chg-1;
+      else               am = imod(am,3);
+      if (am == 0) { noop:; TFREE(alloc); return x; }
+      if (am == chg-1) am=-1;
+    }
+    // Fill implied axes (i<j throughout so this can't increase id)
+    PLAINLOOP for (usz i=0, j=wia; i<max; i++) if (pi[i]==xr) {
+      pi[i]=j; p[j]=i; j++;
+    }
+    u64 au = (u64)am;
+    if (am < 0) { au = -au; ur* t=p; p=pi; pi=t; }
+    if (au>1) for (usz i=0; p[i]==pi[i];) if (++i==n) { // self-inverse
+      au &= 1; if (!au) goto noop; break;
+    }
+    assert(au != 0);
+    // Compute permutation acc = p^am
+    ur* ex = pi; ur* acc = NULL;
+    for (;; au>>=1) {
+      #define SEL(P) { \
+          PLAINLOOP for (usz i=0; i<n; i++) ex[i] = P[p[i]]; \
+          ur* t=P; P=ex; ex=t;                               \
+        }
+      if (au&1) {
+        if (!acc) acc=p; else SEL(acc)
+        if (au==1) break;
+      }
+      SEL(p)
+      if (ex==acc) ex = alloc+2*xr;
+      #undef SEL
+    }
+    i32* wp; w = m_i32arrv(&wp, n);
+    for (usz i=0; i<n; i++) { wp[i] = acc[i]; }
+    TFREE(alloc);
+  }
+  return C2(transp, w, x);
 }
 
 void transp_init(void) {

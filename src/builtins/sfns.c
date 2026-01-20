@@ -1107,7 +1107,7 @@ static inline void shift_check(B w, B x, u32 chr) {
 }
 
 B shiftb_c1(B t, B x) {
-  if (isAtm(x) || RNK(x)==0) thrM("»𝕩: 𝕩 cannot be a scalar");
+  if (isAtm(x) || RNK(x)==0) thrM("»𝕩: 𝕩 cannot be a unit");
   usz ia = IA(x);
   if (ia==0) return x;
   B xf = getFillE(x, "»𝕩: Fill element of 𝕩 not known");
@@ -1122,7 +1122,7 @@ B shiftb_c1(B t, B x) {
   return qWithFill(mut_fcd(r, x), xf);
 }
 B shiftb_c2(B t, B w, B x) {
-  if (isAtm(x) || RNK(x)==0) thrM("𝕨»𝕩: 𝕩 cannot be a scalar");
+  if (isAtm(x) || RNK(x)==0) thrM("𝕨»𝕩: 𝕩 cannot be a unit");
   if (isAtm(w)) w = m_unit(w);
   shift_check(w, x, U'»');
   B f = fill_both(w, x);
@@ -1137,7 +1137,7 @@ B shiftb_c2(B t, B w, B x) {
 }
 
 B shifta_c1(B t, B x) {
-  if (isAtm(x) || RNK(x)==0) thrM("«𝕩: 𝕩 cannot be a scalar");
+  if (isAtm(x) || RNK(x)==0) thrM("«𝕩: 𝕩 cannot be a unit");
   usz ia = IA(x);
   if (ia==0) return x;
   B xf = getFillE(x, "«𝕩: Fill element of 𝕩 not known");
@@ -1152,7 +1152,7 @@ B shifta_c1(B t, B x) {
   return qWithFill(mut_fcd(r, x), xf);
 }
 B shifta_c2(B t, B w, B x) {
-  if (isAtm(x) || RNK(x)==0) thrM("𝕨«𝕩: 𝕩 cannot be a scalar");
+  if (isAtm(x) || RNK(x)==0) thrM("𝕨«𝕩: 𝕩 cannot be a unit");
   if (isAtm(w)) w = m_unit(w);
   shift_check(w, x, U'«');
   B f = fill_both(w, x);
@@ -1552,10 +1552,97 @@ B shape_ucw(B t, B o, B w, B x) {
 
 
 B reverse_ix(B t, B w, B x) {
-  if (isAtm(x) || RNK(x)==0) thrM("𝕨⌽⁼𝕩: 𝕩 must have rank at least 1");
-  if (isF64(w)) return C2(reverse, m_f64(-o2fG(w)), x);
-  if (isAtm(w)) thrM("𝕨⌽⁼𝕩: 𝕨 must consist of integers");
-  return rotate_highrank(1, w, x);
+  if (isAtm(x)) thrM("𝕨⌽⁼𝕩: 𝕩 cannot be an atom");
+  if (isArr(w)) return rotate_highrank(1, w, x);
+  if (RNK(x)==0) thrM("𝕨⌽⁼𝕩: 𝕩 must have rank at least 1 for atom 𝕨");
+  if (!isF64(w)) thrM("𝕨⌽⁼𝕩: 𝕨 must consist of integers");
+  return C2(reverse, m_f64(-o2fG(w)), x);
+}
+static i64 modmul(i64 a, i64 b, usz n) {
+  // Compute am = am*wi % n in high precision
+  a = WRAP_ROT(a,n);
+  b = WRAP_ROT(b,n);
+  if (n == (u32)n) {
+    u64 p = (u64)(u32)a * (u32)b;
+    return p<n ? p : p%n;
+  } else {
+    assert((u64)n <= 1ull<<53); // ia!=0 so we must have n<=ia<=USZ_MAX
+    double d = ((double)a * b) / n;
+    i64 m = a*b - (i64)d*n; // may be off by a small multiple of n
+    return WRAP_ROT(m, n);  // otherwise m_f64 may lose precision
+  }
+}
+B mul_c2(B, B, B);
+B reverse_powd(i64 am, B w, B x) {
+  if (am<0 && isAtm(x)) thrM("𝕨⌽⁼𝕩: 𝕩 cannot be an atom");
+  if (isAtm(w)) {
+    if (isAtm(x) || RNK(x)==0) thrF("𝕨⌽%U𝕩: 𝕩 must have rank at least 1 for atom 𝕨", am<0?"⁼":"");
+    i64 wi = o2i64(w);
+    if (IA(x)==0) return x;
+    return C2(reverse, m_f64(modmul(am, wi, *SH(x))), x);
+  }
+  // Leave w alone and call once for empty x, result is the same
+  // Also don't do any adjustment logic for erroring cases that ignore values in w (don't want to throw a different message)
+  if (isArr(x) && IA(x)!=0 && RNK(w)<=1 && IA(w)<=RNK(x)) {
+    i64 bd = 1<<(53-31); // <=bd times i32 gives an integer-valued float
+    if (MAY_F(elInt(TI(w,elType)) && am<=bd && am>=-bd)) {
+      w = C2(mul, m_f64(am<0?-am:am), w);
+    } else {
+      u8 we; w = squeeze_numTry(w, &we, SQ_NUM);
+      if (!elNum(we)) thrF("𝕨⌽%U𝕩: 𝕨 contained non-number", am<0?"⁼":"");
+      f64* rp; B r = m_f64arrc(&rp, w);
+      SGetU(w); usz wia = IA(w);
+      usz* xsh = SH(x);
+      for (usz i=0; i<wia; i++) rp[i] = modmul(am, o2i64(GetU(w, i)), xsh[i]);
+      decG(w); w=r;
+    }
+  }
+  return rotate_highrank(am<0, w, x);
+}
+
+B drop_powd(i64 am, B w, B x) {
+  assert(am > 1);
+  if (isArr(x) && IA(x)==0) { // axis lengths may not fit in f64
+    if (!isArr(w)) w = m_unit(w);
+    if (RNK(w)>1) thrF("𝕨↓𝕩: 𝕨 must have rank at most 1 (%H ≡ ≢𝕨)", w);
+    usz wia = IA(w);
+    if (wia >= UR_MAX) thrM("𝕨↓𝕩: Result rank too large");
+    ur xr = RNK(x);
+    ur rr = xr>wia? xr : wia;
+    if (rr==1) { dec(w); return x; } // shape is ⟨0⟩
+    ShArr* sh = m_shArr(rr);
+    usz* rsh = sh->a;
+    for (ur i=0; i<rr-xr; i++) rsh[i] = 1;
+    shcpy(rsh+rr-xr, SH(x), xr);
+    SGetU(w);
+    for (usz i=0; i<wia; i++) {
+      i64 wi = o2i64(GetU(w, i));
+      if (mulOn(wi, am)) { rsh[i] = 0; continue; }
+      if (wi<0) wi = -wi;
+      usz l = rsh[i];
+      rsh[i] = l<wi? 0 : l-wi;
+    }
+    dec(w);
+    return taga(arr_shSetUG(customizeShape(x), rr, sh));
+  } else if (isAtm(w)) {
+    i64 wi = o2i64(w);
+    if (mulOn(wi, am)) wi = USZ_MAX;
+    return C2(drop, m_f64(wi), x);
+  } else {
+    if (elInt(TI(w,elType)) && am<=1ll<<32) {
+      w = C2(mul, m_f64(am), w); // fits in i64, doesn't matter if it's precise
+    } else {
+      f64* rp; B r = m_f64arrc(&rp, w);
+      SGetU(w); usz wia = IA(w);
+      for (usz i=0; i<wia; i++) {
+        i64 wi = o2i64(GetU(w, i));
+        if (mulOn(wi, am)) wi = USZ_MAX;
+        rp[i] = wi;
+      }
+      decG(w); w=r;
+    }
+    return takedrop_highrank(0, w, x);
+  }
 }
 
 NOINLINE B enclose_im(B t, B x) {
@@ -1568,10 +1655,98 @@ NOINLINE B pair_im(B t, B x) {
   return TO_GET(x, 0);
 }
 
-B select_c1(B,B);
-NOINLINE B couple_im(B t, B x) {
-  if (isAtm(x) || RNK(x)==0 || *SH(x)!=1) thrM("≍⁼𝕩: Argument must have a leading axis of 1");
-  return C1(select,x);
+B couple_powm(i64 am, B x) {
+  if (am >= 0) {
+    assert(am > 1);
+    if (isAtm(x)) x = m_unit(x);
+    ur xr = RNK(x);
+    if (am > UR_MAX-xr) thrF("≍𝕩: Result rank too large (%i≡=𝕩)", UR_MAX);
+    ur a = am;
+    ur rr = xr + a;
+    ShArr* sh = m_shArr(rr);
+    for (ur i=0; i<am; i++) sh->a[i] = 1;
+    shcpy(sh->a+am, SH(x), xr);
+    Arr* r = customizeShape(x);
+    return taga(arr_shSetUG(r, rr, sh));
+  } else {
+    ur xr;
+    // Can only eventually hit a rank-0 case if all axis lengths are 1
+    if (isAtm(x) || (am+(xr=RNK(x))<0 && (am=-xr, IA(x)==1))) thrM("≍⁼𝕩: Argument must have a leading axis of 1 (0 ≡ =𝕩)");
+    ur rr = am+xr, dr = xr-rr;
+    usz* sh = SH(x);
+    for (ur i=0; i<dr; i++) if (sh[i]!=1) thrF("≍⁼𝕩: Argument must have a leading axis of 1 (%i ≡ ≠𝕩)", sh[i]);
+    Arr* r = TI(x,slice)(incG(x), 0, IA(x));
+    usz* rsh = arr_shAlloc(r, rr);
+    if (rsh) shcpy(rsh, sh+dr, rr);
+    decG(x); return taga(r);
+  }
+}
+NOINLINE B couple_im(B t, B x) { return couple_powm(-1, x); }
+
+B shift_powm(bool aft, i64 am, B x) {
+  u32 c = aft ? U'«' : U'»';
+  assert(am > 1);
+  if (isAtm(x) || RNK(x)==0) thrF("%c𝕩: 𝕩 cannot be a unit", c);
+  usz ia = IA(x);
+  if (ia==0) return x;
+  B xf = getFillE(x, aft? "«𝕩: Fill element of 𝕩 not known" : "»𝕩: Fill element of 𝕩 not known");
+  usz n = *SH(x);
+  if (am >= n) {
+    Arr* r = arr_shCopy(reshape_one(ia, xf), x);
+    decG(x); return taga(r);
+  }
+  usz sz = (usz)am * arr_csz(x);
+  usz r0 = aft? 0 : sz;
+  MAKE_MUT_INIT(r, ia, el_orFill(TI(x,elType))); MUTG_INIT(r);
+  mut_copyG(r, r0, x, sz-r0, ia-sz);
+  mut_fillG(r, aft?ia-sz:0, xf, sz);
+  return qWithFill(mut_fcd(r, x), xf);
+}
+static B join_cycled(bool aft, usz wl, B w, B x, usz* csh, ur cr) {
+  if (wl == 0) goto no_reshape; // join_powd sets this if reshape already done
+  usz ria = wl; if (mulOn(ria, shProd(csh, 0, cr))) thrOOM();
+  usz wia = IA(w);
+  Arr *wa = ria==wia? customizeShape(w) : reshape_cycle(ria, wia, w);
+  if (cr==0) arr_shVec(wa); else {
+    usz* wsh = arr_shAlloc(wa, cr+1);
+    wsh[0] = wl; shcpy(wsh+1, csh, cr);
+  }
+  w = taga(wa);
+  no_reshape:;
+  if (aft) { B t=w; w=x; x=t; }
+  return C2(join, w, x);
+}
+B shift_powd(bool aft, i64 am, B w, B x) {
+  assert(am > 0);
+  u32 c = aft ? U'«' : U'»';
+  if (isAtm(x) || RNK(x)==0) thrF("𝕨%c𝕩: 𝕩 cannot be a unit", c);
+  if (isAtm(w)) w = m_unit(w);
+  shift_check(w, x, c);
+  ur xr = RNK(x);
+  usz xn = *SH(x); usz wn = RNK(w)<xr? 1 : *SH(w);
+  if (wn >= xn) return aft? C2(shifta, w, x) : C2(shiftb, w, x);
+  i64 xd = wn; if (mulOn(xd, am)) xd = xn;
+  if (xd >= xn) {
+    xd = xn;
+    if (aft) { usz o = xn%wn; if (o) w = C2(reverse, m_usz(wn-o), w); }
+  }
+  x = C2(drop, m_f64(aft? xd : -xd), x);
+  return join_cycled(aft, xd, w, x, SH(x)+1, xr-1);
+}
+B join_powd(bool aft, i64 am, B w, B x) {
+  assert(am > 0);
+  ur wr = isArr(w)? RNK(w) : 0;
+  ur xr = isArr(x)? RNK(x) : 0;
+  ur rr = wr>xr?wr:xr; if (rr==0) rr=1;
+  ur cr = rr - 1;
+  if (cr>wr || cr>xr || (cr>0 && !eqShPart(SH(w)+wr-cr, SH(x)+xr-cr, cr))) {
+    if (aft) { B t=w; w=x; x=t; }
+    C2(join, w, x); fatal("expected join_c2 to error");
+  }
+  usz wc = wr? *SH(w) : 1; if (mulOn(wc, am)) thrOOM();
+  if (isAtm(w)) { w = taga(arr_shVec(reshape_one(wc, w))); wc = 0; } // suppress join_cycled reshape
+  if (isAtm(x)) x = m_unit(x);
+  return join_cycled(aft, wc, w, x, SH(x)+xr-cr, cr);
 }
 
 B reverse_ucw(B t, B o, B w, B x) { return reverse_ix(bi_z, w, c1(o, reverse_c2(t, inc(w), x))); }
