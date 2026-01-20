@@ -265,9 +265,43 @@ export{'si_2slash64', slash{1, i64}}; export{'si_thresh_2slash64', u64~~thresh{1
 def scalwidth{T} = if (vect{T}) elwidth{T} else width{T}
 
 # pext, or boolean compress
-def pext_width{}  = if (hasarch{'AVX2'}) 4 else 1
-def thresh_bool{} = if (hasarch{'AVX2'}) 128 else 16
+def pext_width{}  = if (has_simd) 2 else 1
+def thresh_bool{} = 16
 def pext_popc{x:T, m:T} = {
+  def scal{v} = if (vect{T}) T**v else v
+  oper ! ({w,c} => scal{base{1<<w,(64/w)**c}}) infix 80
+  def h8 = 8!0x0f
+  def h4 = 4!2b0011
+  def h2 = 2!2b01
+  # Sum bottom-up
+  a1 := ~m;           b1 := (a1>>1)&h2
+  a2 := a1 - b1;      b2 := (a2>>2)&h4
+  a4 := (a2&h4) + b2; b4 := (a4>>4)&h8
+  a8 := (a4&h8) + b4
+  a  := if (not vect{T}) { a8 * 8!0x01 } else {
+    a16:=a8+a8<<8; a32:=a16+a16<<16; a32+a32<<32
+  }
+  # Fill out, top-down
+  s4 := ((a -b4) | 8!0xf8) & ((a<<4) | 8!0x8f)
+  s2 := ((s4-b2) & h4) | (s4&h4)<<2
+  s1 := if (hasarch{'PCLMUL'} and 2==vcount{T}) zip{...each{clmul{a1,hom_ones{T},.}, iota{2}}, 0}
+   else ((s2^b1) & h2) | (s2&h2)<<1
+  # Shifts
+  r := x & m
+  def shift_r{sh, b} = { r = (r&~b) | (r&b)>>sh }
+                         shift_r{1, s1}
+  t2 := s2 ^ (s2&h2);    shift_r{2, t2 | t2>>1}
+  l4 := (s4>>2) & 4!0x1; shift_r{4, (l4<<4) - l4}
+  @unroll (k from 3 to 6) {
+    l := (a>>k) & 8!0x01
+    shift_r{1<<k, (l<<8) - l}
+  }
+  tup{r, scal{64} - a>>56}
+}
+
+def pext_width {if hasarch{'AVX2'}} = 4
+def thresh_bool{if hasarch{'AVX2'}} = 64
+def pext_popc{x:T, m:T if hasarch{'AVX2'}} = {
   def w = scalwidth{T}
   def scal{v} = if (vect{T}) T**v else v
   def lowbits{w,k} = base{1<<k, cdiv{w,k}**1}
@@ -331,26 +365,6 @@ def pext_popc{x:T, m:T} = {
   tup{pe, scal{w} - z}
 }
 
-def pext_width {if hasarch{'PCLMUL'} > hasarch{'AVX2'}} = 2
-def thresh_bool{if hasarch{'PCLMUL'} > hasarch{'AVX2'}} = 32
-def pext_popc{x0:V, m0:V if hasarch{'PCLMUL'} and V==[2]u64} = {
-  def clmul{a, b} = zip{...@collect (j to 2) clmul{a,b,j}, 0}
-  m := m0
-  x := x0 & m
-  d := ~m << 1           # One bit of the position difference at x
-  c := hom_ones{V}
-  @unroll (i to lb{scalwidth{V}}) {
-    def sh = 1 << i
-    def shift_at{v, s} = { v = (v&~s) | (v&s)>>sh }
-    p := clmul{d, c}     # xor-scan
-    d = d &~ p           # Remove even bits
-    p &= m
-    shift_at{m, p}
-    shift_at{x, p}
-  }
-  tup{x, @collect (j to 2) popc{extract{m0,j}}}
-}
-
 def pext_width {if fast_BMI2{}} = 1
 def thresh_bool{if fast_BMI2{}} = 512
 def pext_popc{x:T, m:T if fast_BMI2{} and T==u64} = tup{pext{x, m}, popc{m}}
@@ -374,6 +388,7 @@ fn compress_bool(w:*u64, x:*u64, r:*u64, n:u64) : void = {
     d := cdiv{n,64}; e := d/v
     @for (w in *V~~w, x in *V~~x over i to cdiv{d,v}) {
       vc := pext_popc{x, w}
+      def extract{v:(V), 1 if hasarch{'SSE2'}>hasarch{'SSE4.1'}} = extract{vec_shift_left{v,1}, 0}
       def add{j} = add_bits{each{extract{., j}, vc}}
       if (i < e) {
         @unroll (j to v) add{j}
