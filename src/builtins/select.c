@@ -805,7 +805,7 @@ B select_replace(u32 chr, B w, B x, B rep, usz wia, usz cam, usz csz) { // consu
   #undef IMPL
   
   do_tycell:;
-  u8 cwidth = csz * elWidth(re);
+  ux cwidth = csz * elWidth(re);
   u8* rp = r.data;
   u8* np = tyany_ptr(rep);
   MatchFnObj eq = MATCHR_GET(re,re);
