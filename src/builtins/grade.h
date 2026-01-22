@@ -1,27 +1,28 @@
 // Ordering functions: Sort (∧∨), Grade (⍋⍒), Bins (⍋⍒)
 
 // Sort and Grade
-// Small ≠𝕩 sort (not grade): insertion sort
-//   SHOULD implement insertion grade
-// Small range sort (not grade): counting sort
+// Trivial results on empty, single-cell, or flagged-sorted 𝕩
+//   COULD reverse to sort flat 𝕩 with flag in opposite direction
+// Small ≠𝕩: insertion sort
+// Long ≤2-byte sort (not grade): counting sort
+//   Length threshold is around the type's maximum range
 //   Count 1s for booleans
 //   Large range/length ("sparse") uses scan: plus, or Singeli max/min
 //   COULD range check 4-byte 𝕩 to try counting sort
-// 4-byte grade checks range and sum
+// 4-byte grade checks range and sum (before even trying insertion sort)
 //   If consistent with a permutation, grade as one and verify after
 //   If small-range, grade with bucket sort
 // Other 1-, 2-, 4-byte cases: radix sort
 //   Singeli +` used if available, speeding up shorter cases
 //   SHOULD skip steps where all bytes are equal
 // General case: Timsort
-// SHOULD check for sorted flag and scan for sortedness in all cases
+// SHOULD scan for sortedness in all cases
 // SHOULD use an adaptive quicksort for 4- and 8-byte arguments
 // SHOULD widen odd cell sizes under 8 bytes in sort and grade
 
 // Bins
 // Length 0 or 1 𝕨: trivial, or comparison
-// Stand-alone 𝕨 sortedness check
-//   SHOULD vectorize sortedness check on lists of numbers
+// Stand-alone 𝕨 sortedness check, with Singeli SIMD
 // Mixed integer and character arguments gives all 0 or ≠𝕨
 // Non-Singeli, integers and characters:
 //   4-byte branchless binary search, 4-byte output
@@ -60,22 +61,46 @@
 #define SORT_TYPE BI32p
 #include "sortTemplate.h"
 
-#define SORT_CMP(W, X) (GRADE_NEG ((W).k - (i64)(X).k))
-#define SORT_NAME GRADE_CAT(IP)
-#define SORT_TYPE I32I32p
-#include "sortTemplate.h"
-
 
 #define LT GRADE_UD(<,>)
 #define FOR(I,MAX) GRADE_UD(for (usz I=0; I<MAX; I++), \
                             for (usz I=MAX; I--; ))
 
-#define INSERTION_SORT(T) \
-  rp[0] = xp[0];                                             \
-  for (usz i=0; i<n; i++) {                                  \
-    usz j=i, jn; T xi=xp[i], rj;                             \
-    while (0<j && xi LT (rj=rp[jn=j-1])) { rp[j]=rj; j=jn; } \
-    rp[j] = xi;                                              \
+// Insertion sort
+#define INS_SORT( J, I, V) rp[J]=V;
+#define INS_GRADE(J, I, V) xs[J]=V; rp[J]=I;
+#define INSERTION_SORT(T, TYP) \
+  INS_##TYP(0, 0, xp[0])                               \
+  for (usz i=0; i<n; i++) {                            \
+    usz j=i, jn; T xi=xp[i], rj;                       \
+    while (0<j && xi LT (rj=CHOOSE_SG_##TYP(rp,xs)[jn=j-1])) { \
+      INS_##TYP(j, rp[jn], rj) j=jn;                   \
+    }                                                  \
+    INS_##TYP(j, i, xi)                                \
+  }
+
+
+// Counting sort
+#define COUNTING_SORT(T) \
+  usz C=1<<(8*sizeof(T));                              \
+  TALLOC(usz, c0, C); usz *c0o=c0+C/2;                 \
+  for (usz j=0; j<C; j++) c0[j]=0;                     \
+  for (usz i=0; i<n; i++) c0o[xp[i]]++;                \
+  if (!ch && n/(COUNT_THRESHOLD*sizeof(T)) <= C) { /* Scan-based */ \
+    T j=GRADE_UD(-C/2,C/2-1);                          \
+    usz ij; while ((ij=c0o[j])==0) GRADE_UD(j++,j--);  \
+    WRITE_SPARSE(T)                                    \
+  } else { /* Branchy */                               \
+    WRITE_DENSE(c0)                                    \
+  }                                                    \
+  TFREE(c0)
+#define WRITE_DENSE(CP) \
+  if (!ch) {                                           \
+    FOR(j,C) for (usz c=CP[j]; c--; ) *rp++ = j-C/2;   \
+  } else {                                             \
+    usz h=GRADE_UD(C/2,0), g=C/2-h;                    \
+    FOR(j,C/2) for (usz c=CP[j+h]; c--; ) *rp++ = j+g; \
+    FOR(j,C/2) for (usz c=CP[j+g]; c--; ) *rp++ = j+h; \
   }
 
 #if SINGELI_AVX2
@@ -105,7 +130,7 @@ extern i8 (*const simd_count_i8)(u16*, u16*, void*, u64, i8);
   u16 *c0o=c0+C/2; u16 *ov=c0+C;                       \
   for (usz j=0; j<C; j++) c0[j]=0;                     \
   simd_count_i8(c0o, ov, xp, n, -128);                 \
-  if (n/COUNT_THRESHOLD <= C) { /* Scan-based */       \
+  if (!ch && n/COUNT_THRESHOLD <= C) { /* Scan-based */\
     i8 j=GRADE_UD(-C/2,C/2-1);                         \
     usz ij; while ((ij=c0o[j])==0) GRADE_UD(j++,j--);  \
     WRITE_SPARSE(i8)                                   \
@@ -116,7 +141,7 @@ extern i8 (*const simd_count_i8)(u16*, u16*, void*, u64, i8);
     u16 oe=-1;                                         \
     for (usz i=0; ov[i]!=oe; i++) cw[ov[i]]+= 1<<15;   \
     TFREE(c0)                                          \
-    FOR(j,C) for (usz c=cw[j]; c--; ) *rp++ = j-C/2;   \
+    WRITE_DENSE(cw)                                    \
     TFREE(cw)                                          \
   }
 #else
@@ -129,20 +154,6 @@ extern i8 (*const simd_count_i8)(u16*, u16*, void*, u64, i8);
 #define COUNTING_SORT_i8 COUNTING_SORT(i8)
 #endif
 
-#define COUNTING_SORT(T) \
-  usz C=1<<(8*sizeof(T));                              \
-  TALLOC(usz, c0, C); usz *c0o=c0+C/2;                 \
-  for (usz j=0; j<C; j++) c0[j]=0;                     \
-  for (usz i=0; i<n; i++) c0o[xp[i]]++;                \
-  if (n/(COUNT_THRESHOLD*sizeof(T)) <= C) { /* Scan-based */ \
-    T j=GRADE_UD(-C/2,C/2-1);                          \
-    usz ij; while ((ij=c0o[j])==0) GRADE_UD(j++,j--);  \
-    WRITE_SPARSE(T)                                    \
-  } else { /* Branchy */                               \
-    FOR(j,C) for (usz c=c0[j]; c--; ) *rp++ = j-C/2;   \
-  }                                                    \
-  TFREE(c0)
-
 // Radix sorting
 #include "radix.h"
 #define INC(P,I) GRADE_UD((P+1)[I]++,P[I]--)
@@ -151,12 +162,22 @@ extern i8 (*const simd_count_i8)(u16*, u16*, void*, u64, i8);
 #define CHOOSE_SG_SORT(S,G) S
 #define CHOOSE_SG_GRADE(S,G) G
 
+#define MAKE_FLIP(T, FOR) \
+  NOINLINE void GRADE_CAT(flip_sum_##T)(T* c, usz n) {  \
+    T* co=c+128; T o=co[GRADE_UD(0,-1)], p=n-o;         \
+    FOR (usz j=0; j<128; j++) { GRADE_UD(co,c)[j]-=o;   \
+                                GRADE_UD(c,co)[j]+=p; } \
+  }
+MAKE_FLIP(u8, for) MAKE_FLIP(u32, NOUNROLL for) MAKE_FLIP(usz, NOUNROLL for)
+#undef MAKE_FLIP
+
 #define RADIX_SORT_i8(T, TYP) \
   TALLOC(T, c0, 256+ROFF); T* c0o=c0+128;  \
   for (usz j=0; j<256; j++) c0[j]=0;       \
   GRADE_UD(,c0[0]=n;)                      \
   for (usz i=0; i<n; i++) INC(c0o,xp[i]);  \
   RADIX_SUM_1_##T;                         \
+  if (RARE(ch)) GRADE_CAT(flip_sum_##T)(c0,n); \
   for (usz i=0; i<n; i++) { i8 xi=xp[i];   \
     rp[c0o[xi]++]=CHOOSE_SG_##TYP(xi,i); } \
   TFREE(c0)
@@ -168,6 +189,7 @@ extern i8 (*const simd_count_i8)(u16*, u16*, void*, u64, i8);
   c1[0]=GRADE_UD(-n,c0[0]=n);                                                \
   for (usz i=0; i<n; i++) { i16 v=xp[i]; INC(c0,(u8)v); INC(c1o,(i8)(v>>8)); } \
   RADIX_SUM_2_##T;                                                           \
+  if (RARE(ch)) GRADE_CAT(flip_sum_##T)(c1,n);                               \
   i16 *r0 = (i16*)(c0+2*256);                                                \
   CHOOSE_SG_##TYP(                                                           \
   for (usz i=0; i<n; i++) { i16 v=xp[i]; r0[c0 [(u8)v     ]++]=v; }          \
@@ -203,17 +225,19 @@ extern i8 (*const simd_count_i8)(u16*, u16*, void*, u64, i8);
   )                                                                          \
   TFREE(alloc)
 
+
 #define SORT_C1 CAT(GRADE_UD(and,or),c1)
 B SORT_C1(B t, B x) {
   if (isAtm(x) || RNK(x)==0) thrM(GRADE_UD("∧","∨")"𝕩: 𝕩 cannot have rank 0");
-  usz n = *SH(x);
+  usz n = IA(x);
   if (n <= 1 || FL_HAS(x,GRADE_UD(fl_asc,fl_dsc))) return x;
-  if (RNK(x)!=1) return IA(x)<=1? x : bqn_merge(SORT_C1(t, toCells(x)), 0);
-  u8 xe = TI(x,elType);
+  if (RNK(x)!=1 && n!=*SH(x)) return *SH(x)<=1? x : bqn_merge(SORT_C1(t, toCells(x)), 0);
   B r;
+  u8 xe = TI(x,elType);
+  usz xw = elWidth(xe);
   if (xe==el_bit) {
     u64* xp = bitany_ptr(x);
-    u64* rp; r = m_bitarrv(&rp, n);
+    u64* rp; r = m_bitarrc(&rp, x);
     usz sum = bit_sum(xp, n);
     u64 n0 = GRADE_UD(n-sum, sum);
     u64 ones = -1ull;
@@ -222,39 +246,45 @@ B SORT_C1(B t, B x) {
     for (; i<n0/64; i++) rp[i]=v0;
     if (i<e) rp[i++]=v0^(ones<<(n0%64));
     for (; i<e; i++) rp[i]=~v0;
-  } else if (xe==el_i8) {
-    i8* xp = i8any_ptr(x);
-    i8* rp; r = m_i8arrv(&rp, n);
-    if (n < 16) {
-      INSERTION_SORT(i8);
-    } else if (n < 256) {
-      RADIX_SORT_i8(u8, SORT);
-    } else {
-      COUNTING_SORT_i8;
-    }
-  } else if (xe==el_i16) {
-    i16* xp = i16any_ptr(x);
-    i16* rp; r = m_i16arrv(&rp, n);
-    if (n < 20) {
-      INSERTION_SORT(i16);
-    } else if (n < 256) {
-      RADIX_SORT_i16(u8, SORT,);
-    } else if (n < 1<<15) {
-      RADIX_SORT_i16(u32, SORT,);
-    } else {
-      COUNTING_SORT(i16);
-    }
-  } else if (xe==el_i32) {
-    i32* xp = i32any_ptr(x);
-    i32* rp; r = m_i32arrv(&rp, n);
-    if (n < 32) {
-      INSERTION_SORT(i32);
-    } else if (n < 256) {
-      RADIX_SORT_i32(u8, SORT,);
-    } else {
-      RADIX_SORT_i32(u32, SORT,);
+  } else if (xw <= 4) {
+    bool ch = elChr(xe);
+    void* xv = tyany_ptr(x);
+    void* rv = m_tyarrc(&r, xw, x, el2t(xe));
+    if (xw == 1) {
+      i8 *xp=xv, *rp=rv;
+      if (n < 16) {
+        if (!ch) { INSERTION_SORT(i8, SORT); }
+        else     { INSERTION_SORT(u8, SORT); }
+      } else if (n < 256) {
+        RADIX_SORT_i8(u8, SORT);
+      } else {
+        COUNTING_SORT_i8;
+      }
+    } else if (xw == 2) {
+      i16 *xp=xv, *rp=rv;
+      if (n < 20) {
+        if (!ch) { INSERTION_SORT(i16, SORT); }
+        else     { INSERTION_SORT(u16, SORT); }
+      } else if (n < 256) {
+        RADIX_SORT_i16(u8, SORT,);
+      } else if (n < 1<<15 || (ch && n < 1<<18)) {
+        RADIX_SORT_i16(u32, SORT,);
+      } else {
+        COUNTING_SORT(i16);
+      }
+    } else if (xw == 4) { // Assume signed: max c32 is 1114111 < 2^31
+      i32 *xp=xv, *rp=rv;
+      if (n < 32) {
+        INSERTION_SORT(i32, SORT);
+      } else if (n < 256) {
+        RADIX_SORT_i32(u8, SORT,);
+      } else {
+        if (MAY_T(n>U32_MAX)) goto generic;
+        RADIX_SORT_i32(u32, SORT,);
+      }
     }
   } else {
+    generic:;
     B xf = getFillR(x);
     HArr* r0 = (HArr*)cpyHArr(incG(x));
     CAT(GRADE_UD(bA,bD),tim_sort)(r0->a, n);
@@ -264,9 +294,9 @@ B SORT_C1(B t, B x) {
   return FL_SET(r, CAT(fl,GRADE_UD(asc,dsc)));
 }
 #undef SORT_C1
-#undef INSERTION_SORT
 #undef COUNTING_SORT
 #undef COUNTING_SORT_i8
+#undef WRITE_DENSE
 #if SINGELI_AVX2
 #undef WRITE_SPARSE_i8
 #undef WRITE_SPARSE_i16
@@ -276,87 +306,95 @@ B SORT_C1(B t, B x) {
 extern GLOBAL Arr* bitUD[3]; // from fns.c
 extern GLOBAL B bit2x[2]; // from fns.c
 extern GLOBAL B int2x[2]; // from sort.c
-extern B grade_bool(B x, usz ia, bool up); // slash.c
+extern B grade_bool(B x, usz n, bool up); // slash.c
+extern B ud_c1(B,B);
 
 #define GRADE_CHR GRADE_UD("⍋","⍒")
 B GRADE_CAT(c1)(B t, B x) {
-  if (isAtm(x) || RNK(x)==0) thrM(GRADE_CHR"𝕩: 𝕩 cannot be a unit");
-  if (RNK(x)>1) x = toCells(x);
-  usz ia = IA(x);
-  B r;
-  if (ia<=2) {
-    if (ia==2) { SGetU(x); r = incG(bit2x[!(compare(GetU(x,0), GetU(x,1)) GRADE_UD(<=,>=) 0)]); }
-    else if (ia==1) r = taga(ptr_inc(bitUD[1]));
-    else r = emptyIVec();
-    decG(x);
-    return r;
+  if (isAtm(x)) unit: thrM(GRADE_CHR"𝕩: 𝕩 cannot be a unit");
+  usz n = IA(x);
+  ur xr = RNK(x); // xr==0 implies n==1
+  if (n <= 1 || FL_HAS(x,GRADE_UD(fl_asc,fl_dsc))) {
+    if (xr!=1) { if (xr==0) goto unit; n=*SH(x); }
+    sorted: decG(x); return n<=2? taga(ptr_inc(bitUD[n])) : C1(ud,m_usz(n));
+  }
+  if (xr > 1) {
+    usz ia = n;
+    n = *SH(x); if (n<=1) goto sorted;
+    if (ia!=n) x = toCells(x);
+  }
+  if (n == 2) {
+    SGetU(x);
+    B r = incG(bit2x[!(compare(GetU(x,0), GetU(x,1)) GRADE_UD(<=,>=) 0)]);
+    decG(x); return r;
   }
   
   u8 xe = TI(x,elType);
-  if (xe==el_bit) return grade_bool(x, ia, GRADE_UD(1,0));
-  if (ia>I32_MAX) thrM(GRADE_CHR"𝕩: 𝕩 too large");
-  i32* rp; r = m_i32arrv(&rp, ia);
-  if (xe==el_i8 && ia>8) {
-    i8* xp = i8any_ptr(x); usz n=ia;
-    RADIX_SORT_i8(usz, GRADE);
-    goto decG_sq;
-  } else if (xe==el_i16 && ia>16) {
-    i16* xp = i16any_ptr(x); usz n = ia;
-    RADIX_SORT_i16(usz, GRADE, i32);
-    goto decG_sq;
-  }
-  if (xe==el_i32 || xe==el_c32) { // safe to use the same comparison for i32 & c32 as c32 is 0≤x≤1114111
-    el32:;
+  if (xe==el_bit) return grade_bool(x, n, GRADE_UD(1,0));
+  if (n>I32_MAX) thrM(GRADE_CHR"𝕩: 𝕩 too large");
+  i32* rp; B r = m_i32arrv(&rp, n);
+  usz xw = elWidth(xe);
+  bool ch = elChr(xe);
+  if (xw == 1) {
+    #define INSERTION_GRADES(W) \
+      TALLOC(i##W, xsi, n);                                          \
+      if (!ch) { i##W* xs=       xsi; INSERTION_SORT(i##W, GRADE); } \
+      else     { u##W* xs=(u##W*)xsi; INSERTION_SORT(u##W, GRADE); } \
+      TFREE(xsi);
+    i8* xp = tyany_ptr(x);
+    if (n < 24) {
+      INSERTION_GRADES(8);
+    } else {
+      RADIX_SORT_i8(usz, GRADE);
+    }
+  } else if (xw == 2) {
+    i16* xp = tyany_ptr(x);
+    if (n < 48) {
+      INSERTION_GRADES(16);
+    } else {
+      RADIX_SORT_i16(usz, GRADE, i32);
+    }
+    #undef INSERTION_GRADES
+  } else if (xw == 4) { // Assume signed: max c32 is 1114111 < 2^31
     i32* xp = tyany_ptr(x);
     i32 min=I32_MAX, max=I32_MIN;
     u32 sum=0;
-    for (usz i = 0; i < ia; i++) {
+    for (usz i = 0; i < n; i++) {
       i32 c = xp[i];
       sum += (u32)c;
       if (c<min) min=c;
       if (c>max) max=c;
     }
     u64 range = max - (i64)min + 1;
-    if (range/2 < ia) {
+    if (range/2 < n) {
       // First try to invert it as a permutation
-      if (range == ia && sum == (u32)(ia * (min+(i64)max)/2)) {
-        for (usz i = 0; i < ia; i++) rp[i]=ia;
-        for (usz i = 0; i < ia; i++) { i32 v=xp[i]; GRADE_UD(rp[v-min],rp[max-v])=i; }
-        bool done=1; for (usz i = 0; i < ia; i++) done &= rp[i]!=ia;
+      if (range == n && sum == (u32)(n * (min+(i64)max)/2)) {
+        for (usz i = 0; i < n; i++) rp[i]=n;
+        for (usz i = 0; i < n; i++) { i32 v=xp[i]; GRADE_UD(rp[v-min],rp[max-v])=i; }
+        bool done=1; for (usz i = 0; i < n; i++) done &= rp[i]!=n;
         if (done) goto decG_sq;
       }
       TALLOC(usz, c0, range); usz *c0o=c0-min;
       for (usz i = 0; i < range; i++) c0[i] = 0;
-      for (usz i = 0; i < ia; i++) c0o[xp[i]]++;
+      for (usz i = 0; i < n; i++) c0o[xp[i]]++;
       usz s=0; FOR (i, range) { usz p=s; s+=c0[i]; c0[i]=p; }
-      for (usz i = 0; i < ia; i++) rp[c0o[xp[i]]++] = i;
-      TFREE(c0); goto decG_sq;
-    }
-    if (ia > 40) {
-      usz n=ia;
+      for (usz i = 0; i < n; i++) rp[c0o[xp[i]]++] = i;
+      TFREE(c0);
+    } else if (n < 64) {
+      TALLOC(i32, xs, n);
+      INSERTION_SORT(i32, GRADE);
+      TFREE(xs);
+    } else {
       RADIX_SORT_i32(usz, GRADE, i32);
-      goto decG_sq;
     }
-    
-    TALLOC(I32I32p, tmp, ia);
-    vfor (usz i = 0; i < ia; i++) {
-      tmp[i].v = i;
-      tmp[i].k = xp[i];
-    }
-    CAT(GRADE_CAT(IP),tim_sort)(tmp, ia);
-    vfor (usz i = 0; i < ia; i++) rp[i] = tmp[i].v;
-    TFREE(tmp);
-    goto decG_sq;
+  } else {
+    SLOW1(GRADE_CHR"𝕩", x);
+    generic_grade(x, n, r, rp, CAT(GRADE_CAT(BP),tim_sort));
   }
-  if (elChr(xe)) { x = taga(cpyC32Arr(x)); goto el32; }
-  
-  SLOW1(GRADE_CHR"𝕩", x);
-  generic_grade(x, ia, r, rp, CAT(GRADE_CAT(BP),tim_sort));
-  goto decG_sq;
   
   decG_sq:;
-  if (ia<=(I8_MAX+1)) r = taga(cpyI8Arr(r));
-  else if (ia<=(I16_MAX+1)) r = taga(cpyI16Arr(r));
+  if (n<=(I8_MAX+1)) r = taga(cpyI8Arr(r));
+  else if (n<=(I16_MAX+1)) r = taga(cpyI16Arr(r));
   decG(x);
   return r;
 }
@@ -623,6 +661,9 @@ B GRADE_CAT(c2)(B t, B w, B x) {
 #undef INC
 #undef ROFF
 #undef PRE64
+#undef INSERTION_SORT
+#undef INS_SORT
+#undef INS_GRADE
 #undef CHOOSE_SG_SORT
 #undef CHOOSE_SG_GRADE
 #undef RADIX_SORT_i8
