@@ -279,11 +279,12 @@ B SORT_C1(B t, B x) {
       } else if (n < 256) {
         RADIX_SORT_i32(u8, SORT,);
       } else {
-        if (n>U32_MAX) thrM(GRADE_UD("∧","∨")"𝕩: 𝕩 too large");
+        if (MAY_T(n>U32_MAX)) goto generic;
         RADIX_SORT_i32(u32, SORT,);
       }
     }
   } else {
+    generic:;
     B xf = getFillR(x);
     HArr* r0 = (HArr*)cpyHArr(incG(x));
     CAT(GRADE_UD(bA,bD),tim_sort)(r0->a, n);
