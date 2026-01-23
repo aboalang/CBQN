@@ -5,8 +5,8 @@
 // Size 1: compress 64-bit units, packed in SIMD registers if possible
 //   Scalar pext if BMI2 is present
 //   Pairwise combination on AVX2 and NEON
-//     COULD use 8-bit polynomial multiply for NEON base case
 //   Otherwise, shift using power-of-two masks from xor and sum-scans
+//     Also done with 8-bit polynomial multiply for NEON base case
 //   COULD return boolean result from Where
 // Size 8, 16, 32, 64: mostly table-based
 //   Where: direct table lookup, widening for 16 and 32 if available
@@ -93,6 +93,7 @@
   extern void (*const si_scan_pluswrap_u16)(uint16_t* v0,uint16_t* v1,uint64_t v2,uint16_t v3);
   extern void (*const si_scan_pluswrap_u32)(uint32_t* v0,uint32_t* v1,uint64_t v2,uint32_t v3);
   extern void (*const si_scan_max_i32)(int32_t* v0,int32_t* v1,uint64_t v2);
+  #define vmulq_p8u(A,B) (uint8x16_t)vmulq_p8((poly8x16_t)(A), (poly8x16_t)(B))
   #define SINGELI_FILE slash
   #include "../utils/includeSingeli.h"
   extern uint64_t* const si_spaced_masks;

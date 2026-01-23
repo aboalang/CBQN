@@ -365,6 +365,23 @@ def pext_popc{x:T, m:T if hasarch{'AVX2'} or hasarch{'AARCH64'}} = {
       }
     }
   }
+  def build{k==8 if hasarch{'AARCH64'}} = {
+    def V = [16]u8
+    # Lookup table for bit sum
+    def s = 4 - fold{flat_table{+,...}, 4**iota{2}}
+    def nz4 = shuf{[16]u8, make{V, s}, .}
+    def nz{m} = nz4{m&V**0x0f} + nz4{m>>4}  # Number of 0s
+    # Carry-less multiply to compress
+    def clmul8 = emit{V, 'vmulq_p8u', ...}  # Cover for vmulq_p8
+    def xor_scan = clmul8{., hom_ones{V}}
+    {x, d} := each{~~{V,.}, build{1}}
+    @unroll (i to lb{scalwidth{V}}) {
+      p := xor_scan{d}     # i-th bit of prefix sum of initial d
+      d = d &~ p           # Remove even bits
+      x = (x&~p) | (x&p)>>(1<<i)
+    }
+    each{~~{T,.}, tup{x, nz{V~~m}}}
+  }
   # Compose k/g groups with k/g-1 regular shifts
   def multi_shift{x, z, g, k, sc} = {
     o := z * sc{lowbits{k,g}}  # Offsets by prefix sum
