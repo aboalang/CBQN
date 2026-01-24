@@ -25,7 +25,7 @@
 #define RUN_END run_end(curr_run_)
 
 STATIC_GLOBAL B replPath;
-GLOBAL B replName; // used in vm.c
+STATIC_GLOBAL B replName;
 STATIC_GLOBAL Scope* gsc;
 STATIC_GLOBAL bool repl_initialized = false;
 
@@ -568,6 +568,7 @@ static NOINLINE i64 readInt(char** p) {
 B m_state(B path, B name, B args);
 NOINLINE B gsc_exec_inplace(B src, char* name, B args) {
   Block* block = bqn_compSc(src, m_state(incG(replPath), m_c8vec_0(name), args), gsc, true);
+  block->comp->kind = COMP_REPL;
   ptr_dec(gsc->body); // redirect new errors to the newly executed code; initial scope had 0 vars, so this is safe
   gsc->body = ptr_inc(block->bodies[0]);
   B r = execBlockInplace(block, gsc);
@@ -823,6 +824,7 @@ void cbqn_runLine0(char* ln, i64 read) {
     output = 1;
   }
   Block* block = bqn_compSc(code, m_state(incG(replPath), incG(replName), emptySVec()), gsc, true);
+  block->comp->kind = COMP_REPL;
   
   ptr_dec(gsc->body);
   gsc->body = ptr_inc(block->bodies[0]);

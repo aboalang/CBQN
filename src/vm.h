@@ -89,6 +89,11 @@ typedef struct Body Body;
 typedef struct Scope Scope;
 typedef struct ScopeExt ScopeExt;
 
+enum {
+  COMP_UNK,
+  COMP_REPL,
+};
+
 typedef struct Comp {
   struct Value;
   B src;
@@ -96,6 +101,7 @@ typedef struct Comp {
   B indices;
   B nameList;
   HArr* objs;
+  u8 kind;
   u32 blockAm;
 } Comp;
 
