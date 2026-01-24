@@ -1588,6 +1588,7 @@ usz profiler_getResults(B* compListRes, B* mapListRes, u64 specialResults[ENT_SP
   B mapList = emptyHVec();
   usz compCount = 0;
   void* map = profiler_makeMap();
+  bool warnedCollision = false;
   
   while (c!=profiler_buf_c) {
     usz bcPos = c->bcPos;
@@ -1611,9 +1612,19 @@ usz profiler_getResults(B* compListRes, B* mapListRes, u64 specialResults[ENT_SP
         B inds = IGetU(comp->indices, 0); cs = o2s(IGetU(inds,bcPos));
         // B inde = IGetU(comp->indices, 1); ce = o2s(IGetU(inde,bcPos));
       }
-      i32* cMap = i32arr_ptr(IGetU(mapList, idx));
+      B arr = IGetU(mapList, idx);
+      i32* cMap = i32arr_ptr(arr);
+      if (cs >= IA(arr)) {
+        if (!warnedCollision) {
+          printf("Warning: bytecode size mismatch between samples");
+          if (!q_N(path)) print_fmt(" for path %B", path);
+          printf("; results may be inaccurate.\n");
+          warnedCollision = true;
+        }
+      } else {
+        cMap[cs]++;
+      }
       // for (usz i = cs; i <= ce; i++) cMap[i]++;
-      cMap[cs]++;
     }
     c++;
   }
