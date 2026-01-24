@@ -1596,7 +1596,7 @@ usz profiler_getResults(B* compListRes, B* mapListRes, u64 specialResults[ENT_SP
     } else {
       Comp* comp = c->comp;
       B path = comp->fullpath;
-      i32 idx = profiler_index(&map, q_N(path)? tag(comp, OBJ_TAG) : path);
+      i32 idx = profiler_index(&map, q_N(path) || comp->kind==COMP_REPL? tag(comp, OBJ_TAG) : path);
       if (idx == compCount) {
         compList = vec_addN(compList, tag(comp, OBJ_TAG));
         i32* rp;
