@@ -326,83 +326,56 @@ def thresh_bool{if hasarch{'AVX2'}} = 64
 def pext_popc{x:T, m:T if hasarch{'AVX2'} or hasarch{'AARCH64'}} = {
   def __shr{a:U=[_]_, sh:U if hasarch{'AARCH64'}} = a << -sh
   def w = scalwidth{T}
-  def scal{v} = if (vect{T}) T**v else v
-  def lowbits{w,k} = base{1<<k, cdiv{w,k}**1}
   # At each step, x and z are split into groups of length k
   # - z tells how many bits in the group are NOT used
   # - x contains the bits, with z zeros above
   def build{k==1} = tup{x&m, ~m}
-  def build{k if k > 1} = {
+  def build{k if (hasarch{'AARCH64'} and k>=8) or (hasarch{'AVX2'} and k>=32)} = {
+    # We have variable shifts at these sizes
     def h = k>>1          # Increase size from h to k
     {x,z} := build{h}
-    def low_s = lowbits{w,k}  # Low bit in each new group
-    def low = scal{low_s}
-    if (k == 2) {
-      z0 := z & low
-      zm := z>>1 & low
-      tup{ x - (x>>1 & z0), zm + z0 }
-    } else if (vect{T} and ((hasarch{'AVX2'} and k>=32) or (hasarch{'AARCH64'} and k>=8))) {
-      # We have variable shifts at these sizes
-      lh := scal{low_s*tail{h}}
-      zl := z & lh
-      def S = re_el{ty_u{k}, T}
-      tup{T~~(S~~(x&~lh) >> S~~zl) | (x&lh), T~~(S~~z >> h) + zl}
-    } else {
-      # SWAR shifter: shift x by sh*o, in length-k groups
-      def shift{sh, o, x} = {
-        l := o & low; m := l<<k - l
-        s := (x & m)>>sh | (x &~ m)
-        if (2*sh<k/2) shift{2*sh, o>>1, s} else s
-      }
-      # Shift high x group down by low z, then add halves of z
-      odd:T = scal{low_s*(1<<k - 1<<h)} # Top half
-      ze := z&~odd
-      z1 := ze + scal{low_s*tail{k-1}}  # z-1, as signed k-bit
-      move := odd &~ (z1<<1)         # Only groups where z>0 move
-      tup{
-        (x&~move) | shift{1, z1, x&move}>>1,
-        (z&odd)>>h + ze
-      }
-    }
+    def low_s = base{1<<k, cdiv{w,k}**1}  # Low bit in each new group
+    lh := T**(low_s*tail{h})
+    zl := z & lh
+    def S = re_el{ty_u{k}, T}
+    tup{T~~(S~~(x&~lh) >> S~~zl) | (x&lh), T~~(S~~z >> h) + zl}
   }
-  def build{k==8 if hasarch{'AARCH64'}} = {
-    def V = [16]u8
-    # Lookup table for bit sum
+  def build{k if (hasarch{'AARCH64'} and k==8) or (hasarch{'AVX2'} and k==16)} = {
+    def V = re_el{ty_u{k}, T}
+    vm := V~~m
+    # Lookup table for 4-bit number of zeros
+    def I = re_el{u8, T}
     def s = 4 - fold{flat_table{+,...}, 4**iota{2}}
-    def nz4 = shuf{[16]u8, make{V, s}, .}
-    def nz{m} = nz4{m&V**0x0f} + nz4{m>>4}  # Number of 0s
-    # Carry-less multiply to compress
-    def clmul8 = emit{V, 'vmulq_p8u', ...}  # Cover for vmulq_p8
-    def xor_scan = clmul8{., hom_ones{V}}
+    def nz4 = shuf{[16]u8, make{I, cycle{vcount{I}, s}}, .}
+    im := I**0x0f
+    # Various methods to get shift masks
+    def {xor_scan, bp, alt_p, nz} = if (hasarch{'AARCH64'}) {
+      # Carry-less multiply
+      def clmul8 = emit{V, 'vmulq_p8u', ...}  # Cover for vmulq_p8
+      def xor_scan = clmul8{., hom_ones{V}}
+      tup{xor_scan, 3, '', nz4{vm&im} + nz4{vm>>4}}
+    } else {
+      # 2 shift-based xor scans (bottom-up), 2 sum-based masks (top-down)
+      def xor_scan = fold{{x,s} => x^(x<<s), ., 1<<iota{4}}
+      r4 := V**16w0x1
+      a4 := V~~nz4{(I~~m)&im} | (V~~nz4{I~~(m>>4)&im})<<4
+      s4 := a4 * r4
+      def alt_p{k} = { l := (s4>>k) & r4; (l<<4) - l }
+      nz := s4>>12 - (vm==V**0)<<4  # s4 overflows if all 16 bits are 0
+      tup{xor_scan, 2, alt_p, nz}
+    }
     {x, d} := each{~~{V,.}, build{1}}
-    @unroll (i to lb{scalwidth{V}}) {
-      p := xor_scan{d}     # i-th bit of prefix sum of initial d
-      d = d &~ p           # Remove even bits
+    @unroll (i to lb{k}) {
+      p := if (i<bp) xor_scan{d}  # i-th bit of prefix sum of initial d
+           else alt_p{i}          # Or a sum-based mask
+      if (i<bp-1) d = d &~ p      # Remove even bits, if d will be reused
       x = (x&~p) | (x&p)>>(1<<i)
     }
-    each{~~{T,.}, tup{x, nz{V~~m}}}
-  }
-  # Compose k/g groups with k/g-1 regular shifts
-  def multi_shift{x, z, g, k, sc} = {
-    o := z * sc{lowbits{k,g}}  # Offsets by prefix sum
-    def s = tail{g}
-    def s0 = sc{s}
-    def oo{sh} = if (sh==g) z else o>>(sh-g)      # Offset for group
-    def gr{sh} = (x & sc{s<<sh}) >> (oo{sh} & s0) # Shifted group
-    pe := fold{|, x&s0, each{gr, g*slice{iota{k/g},1}}}
-    tup{pe, o>>(k-g)}
-  }
-  def build{k==32 if hasarch{'AVX2'} and vect{T}} = {
-    def S = re_el{ty_u{k}, T}
-    def c{T,vs} = each{{v}=>T~~v, vs}
-    c{T, multi_shift{...c{S, build{8}}, 8, k, {s}=>S**s}}
-  }
-  def build{k if not vect{T} and k > 8} = {
-    multi_shift{...build{8}, 8, k, {s}=>s}
+    each{~~{T,.}, tup{x, nz}}
   }
   # Final result
   def {pe, z} = build{w}
-  tup{pe, scal{w} - z}
+  tup{pe, T**w - z}
 }
 
 def pext_width {if fast_BMI2{}} = 1
