@@ -807,7 +807,8 @@ void cbqn_runLine0(char* ln, i64 read) {
       return;
 #endif
     } else if (isCmd(cmdS, &cmdE, "e ") || isCmd(cmdS, &cmdE, "explain ")) {
-      HArr* expla = toHArr(bqn_explain(utf8Decode0(cmdE)));
+      B vars = listVars(gsc);
+      HArr* expla = toHArr(bqn_explain(utf8Decode0(cmdE), vars));
       usz ia=PIA(expla);
       for(usz i=0; i<ia; i++) {
         printsB(expla->a[i]);
