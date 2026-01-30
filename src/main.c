@@ -856,6 +856,7 @@ void cbqn_runLine0(char* ln, i64 read) {
       else r1 = r2;
     }
     printTime(tns / rt);
+    res = m_c32(0);
   } else if (mode==4 || mode==5) {
     if (CATCH) { profiler_stop(); profiler_free(); rethrow(); }
     if (profiler_alloc() && profiler_start(mode==5? 2 : 1, profile)) {
