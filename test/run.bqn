@@ -17,6 +17,7 @@ Trim ← {((∨`⌾⌽∧∨`)𝕩≠' ')/𝕩}
   •Out "  ignore-messages  Don't warn about incorrect error messages"
   •Out "  bin-search       Binary search for some property. Next argument should be /[01]*/, with a 1 appended every time the property is matched, and a 0 otherwise"
   •Out "  seed=123         Random seed for tests that care (default=1; seed=u will choose a random seed)"
+  •Out "  bin=./BQN        For CLI tests, the binary to use"
   •Exit 0
 }⍟⊢ (0=≠•args) ∨´ "help"‿"h"‿"?"∊'-'⊸≠⊸/¨•args
 
@@ -31,7 +32,7 @@ o ← {
     args ↩ (¬n∨𝕩)/args
   }⍟(∨´) "bin-search"⊸≡¨ args
   
-  named ← "run"‿"lint"‿"update-messages"‿"slow"‿"ignore-messages"‿"noerr"‿"heapverify"‿"debug"‿"no-catch"‿"seed"‿"update-values"
+  named ← "run"‿"lint"‿"update-messages"‿"slow"‿"ignore-messages"‿"noerr"‿"heapverify"‿"debug"‿"no-catch"‿"seed"‿"update-values"‿"bin"
   i ← named⊐{𝕩↑˜⊑𝕩⊐'='}¨ args
   run    ⇐ ∨´i=0
   lint   ⇐ ∨´i=1
@@ -48,6 +49,7 @@ o ← {
     ⟨"u"⟩: s←•rand.Range 2⋆31 ⋄ •Out "seed="∾•Repr s ⋄ s;
     ⟨s⟩: •ParseFloat s
   } 5↓¨ (i=9)/args
+  bin ⇐ 4↓¨ (i=11)/args
   
   ⟨
     usz
@@ -300,6 +302,8 @@ helpers ← {
   
   _eqvar ⇐ {𝔽 _eqvar0_ ListVariations}
   _eqvarv_ ⇐ {𝔽 _eqvar0_ (𝕘⊸ListVariations)}
+  
+  Bin ⇐ {𝕊: "This test needs bin=... specified" !1=≠o.bin ⋄ ⋈⁼o.bin}
 }
 
 Run¨ SearchRefine o.files
