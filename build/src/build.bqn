@@ -254,7 +254,7 @@ po ← { # parsed options
   
   allFlags ← GetOpt "CCFLAGS"
   minCCFlags ← ∾⟨allFlags, GetOpt "f", native/⟨"-march=native"⟩⟩
-  ubsanFlags ← ubsan / ⟨"-fsanitize=undefined", "-fno-sanitize=float-cast-overflow", "-fno-sanitize=vla-bound"⟩
+  ubsanFlags ← ubsan / ⟨"-fsanitize=undefined", "-fno-sanitize=vla-bound"⟩
   
   CDefines ← {𝕊: cDefines ↩ (@+10) Split SH ⟨cc⟩ ∾ minCCFlags ∾ ⟨"-dM", "-E", "-"⟩}
   

@@ -487,20 +487,27 @@ static B m_c32(u32 n) { return tagu64(n,C32_TAG); } // TODO check validity?
 static B m_i32(i32 n) { return m_f64(n); }
 static B m_usz(usz n) { return m_f64(n); }
 
-// two integer casts for i8 & i16 because clang on armv8 otherwise skips the sign extending step
-FORCE_INLINE bool q_fbit(f64 x) { return x==0 | x==1; }
-FORCE_INLINE bool q_fi8 (f64 x) { return x==(f64)(i8 )(i32)x; }
-FORCE_INLINE bool q_fi16(f64 x) { return x==(f64)(i16)(i32)x; }
-FORCE_INLINE bool q_fi32(f64 x) { return x==(f64)(i32)     x; }
-FORCE_INLINE bool q_fu8 (f64 x) { return x==(f64)(u8 )(u32)x; }
-FORCE_INLINE bool q_fu16(f64 x) { return x==(f64)(u16)(u32)x; }
-FORCE_INLINE bool q_fu32(f64 x) { return x==(f64)(u32)     x; }
-FORCE_INLINE bool q_fi64(i64* out, f64 x) { return x == (f64) (*out = (i64)x); }
-FORCE_INLINE bool q_fu64(u64* out, f64 x) { return x == (f64) (*out = (u64)x); }
-FORCE_INLINE bool q_fusz(usz* out, f64 x) { return x == (f64) (*out = (usz)x); }
-FORCE_INLINE bool q_fi8o(i8*  out, f64 x) { return x == (f64) (*out = (i8) (i32)x); }
-FORCE_INLINE bool q_fi16o(i16*out, f64 x) { return x == (f64) (*out = (i16)(i32)x); }
-FORCE_INLINE bool q_fi32o(i32*out, f64 x) { return x == (f64) (*out = (i32)x); }
+// very funky workarounds for out-of-range float-to-int casts being UB, but it being desirable here to have them work anyway
+// this still does UB, but hopefully in such a way that any sane optimizations can't really make it produce wrong results
+#if defined(FLOAT_CAST_FENCE_ASM) ? FLOAT_CAST_FENCE_ASM : __clang__
+  #define FLOAT_TO_INT(T, X) ({ __auto_type x_ = (T)(X); if (!__builtin_constant_p(x_)) __asm__("" : "+r"(x_)); x_; })
+#else
+  #define FLOAT_TO_INT(T, X) ((T)(X))
+#endif
+#define FLOAT_UB __attribute__((no_sanitize("float-cast-overflow")))
+FLOAT_UB FORCE_INLINE bool q_fbit(f64 x) { return x==0 | x==1; }
+FLOAT_UB FORCE_INLINE bool q_fi8 (f64 x) { return x==(f64)(i8 )(i32)x; }
+FLOAT_UB FORCE_INLINE bool q_fi16(f64 x) { return x==(f64)(i16)(i32)x; }
+FLOAT_UB FORCE_INLINE bool q_fi32(f64 x) { return x==(f64)FLOAT_TO_INT(i32, x); }
+FLOAT_UB FORCE_INLINE bool q_fu8 (f64 x) { return x==(f64)(u8 )(i32)x; }
+FLOAT_UB FORCE_INLINE bool q_fu16(f64 x) { return x==(f64)(u16)(i32)x; }
+FLOAT_UB FORCE_INLINE bool q_fu32(f64 x) { return x==(f64)FLOAT_TO_INT(u32, x); }
+FLOAT_UB FORCE_INLINE bool q_fi64(i64* out, f64 x) { return x == (f64) (*out = FLOAT_TO_INT(i64, x)); }
+FLOAT_UB FORCE_INLINE bool q_fu64(u64* out, f64 x) { return x == (f64) (*out = FLOAT_TO_INT(u64, x)); }
+FLOAT_UB FORCE_INLINE bool q_fusz(usz* out, f64 x) { return x == (f64) (*out = FLOAT_TO_INT(usz, x)); }
+FLOAT_UB FORCE_INLINE bool q_fi8o(i8*  out, f64 x) { return x == (f64) (*out = (i8) (i32)x); }
+FLOAT_UB FORCE_INLINE bool q_fi16o(i16*out, f64 x) { return x == (f64) (*out = (i16)(i32)x); }
+FLOAT_UB FORCE_INLINE bool q_fi32o(i32*out, f64 x) { return x == (f64) (*out = FLOAT_TO_INT(i32, x)); }
 
 FORCE_INLINE bool q_bit(B x) { return isNum(x) & (x.f==0 | x.f==1); }
 FORCE_INLINE bool q_i8 (B x) { return q_fi8 (x.f); }
