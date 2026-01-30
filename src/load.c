@@ -670,10 +670,7 @@ B bqn_explain(B str, B vars) { // consumes str & vars
       compOpts = incG(o[re_compOpts]);
       if (!q_N(vars)) decG(vars);
     } else {
-      usz n = IA(vars);
-      i32* p;
-      B vDepth = m_i32arrv(&p, n);
-      for (usz i=0; i<n; i++) p[i] = 0;
+      B vDepth = i64EachDec(-1, incG(vars));
       compOpts = m_lvB_4(incG(o[re_rt]), incG(bi_sys), vars, vDepth);
     }
     c = c2(o[re_compFn], compOpts, inc(str));
