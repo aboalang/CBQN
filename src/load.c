@@ -650,7 +650,7 @@ void bqn_exit(i32 code) {
 }
 
 STATIC_GLOBAL B load_explain;
-B bqn_explain(B str) {
+B bqn_explain(B str, B vars) { // consumes str & vars
   #if NO_EXPLAIN
     thrM("Explainer not included in this CBQN build");
   #else
@@ -663,9 +663,19 @@ B bqn_explain(B str) {
       gc_add(load_explain = evalFunBlockConsume(expl_b));
     }
     
+    B c;
     COMPS_PUSH(str, bi_N, def_re);
-    B c = c2(o[re_compFn], incG(o[re_compOpts]), inc(str));
-    COMPS_POP;
+    B compOpts;
+    if (q_N(vars) || IA(vars) == 0) {
+      compOpts = incG(o[re_compOpts]);
+      if (!q_N(vars)) decG(vars);
+    } else {
+      B vDepth = i64EachDec(-1, incG(vars));
+      compOpts = m_lvB_4(incG(o[re_rt]), incG(bi_sys), vars, vDepth);
+    }
+    c = c2(o[re_compFn], compOpts, inc(str));
+    COMPS_POP; popCatch();
+    
     B ret = c2(load_explain, c, str);
     return ret;
   #endif
