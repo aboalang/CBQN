@@ -109,9 +109,9 @@ Functions for converting/using atom types:
   q_fi8(x)  q_i8(x)
   q_fi16(x) q_i16(x)
   q_fi32(x) q_i32(x)
-  q_fi64(x) q_i64(x)
-  q_fu64(x) q_u64(x)
-  q_fusz(x) q_usz(x)
+  q_fi64(&v,x) q_i64(&v,x) // these also store the converted value in v, to avoid potential problems on x≡2⋆63, for which the query might arbitrarily return true (for such, v here will be ¯1+2⋆63, but a separate conversion cannot guarantee that)
+  q_fu64(&v,x) q_u64(&v,x) // ↑ except x≡2⋆64 & v→¯1+2⋆64
+  q_fusz(&v,x) q_usz(&v,x) // also here, though the problematic case doesn't exist on usz=32
   
   q_N(x)    // query if x is · (≡ bi_N)
   noFill(x) // query if x represents undefined fill (which returned by getFill*; aka test if equal to bi_noFill)

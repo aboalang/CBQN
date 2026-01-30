@@ -217,8 +217,9 @@ static NOINLINE NORETURN void select_depth2_bad_inds(B cw, ux axis, B x) {
   ux len = SH(x)[axis];
   for (ux i = 0; i < ia; i++) {
     f64 c = o2fG(GetU(cw,i));
-    if (!q_fi64(c)) thrF("𝕨⊏𝕩: Bad index: %f along axis %z", c, axis);
-    WRAP(c, len, thrF("𝕨⊏𝕩: Indexing out-of-bounds along axis %z (%f ∊ %z⊑𝕨, %H≡≢𝕩)", axis, c, axis, x));
+    i64 ci;
+    if (!q_fi64(&ci, c)) thrF("𝕨⊏𝕩: Bad index: %f along axis %z", c, axis);
+    WRAP(ci, len, thrF("𝕨⊏𝕩: Indexing out-of-bounds along axis %z (%f ∊ %z⊑𝕨, %H≡≢𝕩)", axis, c, axis, x));
   }
   fatal("select_depth2_bad_inds should've errored");
 }
@@ -643,8 +644,9 @@ B select_c2(B t, B w, B x) {
       MUTG_INIT(rm);
       for (; i < wia; i++) {
         B cw = GetU(w, i); // assumed number from previous squeeze
-        if (!q_i64(cw)) { bad_cw: goto bad1; }
-        usz c = WRAP(o2i64G(cw), xn, goto bad_cw; );
+        i64 cwi;
+        if (!q_i64(&cwi, cw)) { bad_cw: goto bad1; }
+        usz c = WRAP(cwi, xn, goto bad_cw; );
         mut_copyG(rm, i*csz, x, csz*c, csz);
       }
       r = a(withFill(mut_fv(rm), xf));
@@ -1221,8 +1223,8 @@ SHOULD_INLINE i64 i64get_i32(void* xp, ux i, bool* bad) {
   return ((i32*)xp)[i];
 }
 SHOULD_INLINE i64 i64get_f64(void* xp, ux i, bool* bad) {
-  f64 f = ((f64*)xp)[i];
-  if (q_fi64(f)) return (i64)f;
+  f64 f = ((f64*)xp)[i]; i64 fi;
+  if (q_fi64(&fi, f)) return fi;
   *bad = true;
   return 0;
 }

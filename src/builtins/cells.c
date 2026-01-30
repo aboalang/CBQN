@@ -801,9 +801,11 @@ NOINLINE B for_cells_SA(B f, B w, B x, ur xcr, ur xr, u32 chr) { // w⊸F⎉xcr 
         }
         return rotate_highrank(0, a, x);
       }
-      case n_transp:
-        if (q_usz(w)) { usz a=o2sG(w); if (a<xcr) return transp_cells(a+xk, xk, x); }
+      case n_transp: {
+        usz a;
+        if (q_usz(&a, w) && a<xcr) return transp_cells(a+xk, xk, x);
         break;
+      }
       default: if (isPervasiveDy(f)) {
         if (isAtm(w)) return c2(f, w, x);
         if (IA(x)==0) break;

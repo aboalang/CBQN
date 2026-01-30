@@ -77,8 +77,8 @@ void repeat_bounds(i64* bound, B g) { // doesn't consume
       for (usz i = 0; i < ia; i++) repeat_bounds(bound, GetU(g, i));
     }
   } else if (isNum(g)) {
-    if (!q_i64(g)) repeat_bad_num();
-    i64 c = o2i64G(g);
+    i64 c;
+    if (!q_i64(&c, g)) repeat_bad_num();
     if (c<bound[0]) bound[0] = c;
     if (c>bound[1]) bound[1] = c;
   } else thrM("⍟: 𝔾 contained non-number");

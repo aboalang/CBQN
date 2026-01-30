@@ -231,8 +231,9 @@ B shape_c2_01(usz wia, B w, B x) {
     case 1: // ⟨x⟩⥊1
       w = TO_GET(w,0);
       // fallthrough
-      if (q_usz(w)) {
-        return taga(arr_shVec(reshape_unshaped(o2sG(w), x)));
+      usz wu;
+      if (q_usz(&wu, w)) {
+        return taga(arr_shVec(reshape_unshaped(wu, x)));
       }
     case 2: // atom
       shape_c2_prim0(w);
@@ -245,8 +246,9 @@ B shape_c2_01(usz wia, B w, B x) {
 
 B shape_c2_listw(B t, B w, B x);
 B shape_c2(B t, B w, B x) {
-  if (q_usz(w)) {
-    return taga(arr_shVec(reshape_unshaped(o2sG(w), x)));
+  usz wu;
+  if (q_usz(&wu, w)) {
+    return taga(arr_shVec(reshape_unshaped(wu, x)));
   } else {
     return shape_c2_listw(t, w, x);
   }
@@ -269,11 +271,11 @@ NOINLINE B shape_c2_listw(B t, B w, B x) {
   bool bad=false, good=false;
   for (i32 i = 0; i < nr; i++) {
     B c = GetU(w, i);
-    if (q_usz(c)) {
-      usz v = o2sG(c);
-      sh->a[i] = v;
-      if (RARE(mulOn(nia, v))) bad = true;
-      good|= v==0;
+    usz cu;
+    if (q_usz(&cu, c)) {
+      sh->a[i] = cu;
+      if (RARE(mulOn(nia, cu))) bad = true;
+      good|= cu==0;
     } else {
       shape_c2_prim0(c);
       if (unkPos!=-1) thrM("𝕨⥊𝕩: 𝕨 contained multiple computed axes");
@@ -425,7 +427,8 @@ static NOINLINE void checkIndexList(B w, ur xr) {
   }
 
 static i64 pick_convFloat(f64 f) {
-  if (LIKELY(q_fi64(f))) return (i64)f;
+  i64 fi;
+  if (LIKELY(q_fi64(&fi, f))) return fi;
   thrM("𝕨⊑𝕩: 𝕨 contained a non-integer");
 }
 

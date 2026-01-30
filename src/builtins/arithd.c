@@ -501,16 +501,18 @@ static u64 lcm_u64(u64 a, u64 b) {
 }
 B gcd_c2(B t, B w, B x) {
   if (isNum(w) && isNum(x)) {
-    if (!q_u64(w) || !q_u64(x)) thrM("𝕨 •math.GCD 𝕩: Inputs other than natural numbers not yet supported");
-    return m_f64(gcd_u64(o2u64G(w), o2u64G(x)));
+    u64 wu, xu;
+    if (!q_u64(&wu, w) || !q_u64(&xu, x)) thrM("𝕨 •math.GCD 𝕩: Inputs other than natural numbers not yet supported");
+    return m_f64(gcd_u64(wu, xu));
   }
   P2(gcd)
   thrM("𝕨 •math.GCD 𝕩: Unexpected argument types");
 }
 B lcm_c2(B t, B w, B x) {
   if (isNum(w) && isNum(x)) {
-    if (!q_u64(w) || !q_u64(x)) thrM("𝕨 •math.LCM 𝕩: Inputs other than natural numbers not yet supported");
-    return m_f64(lcm_u64(o2u64G(w), o2u64G(x)));
+    u64 wu, xu;
+    if (!q_u64(&wu, w) || !q_u64(&xu, x)) thrM("𝕨 •math.LCM 𝕩: Inputs other than natural numbers not yet supported");
+    return m_f64(lcm_u64(wu, xu));
   }
   P2(lcm)
   thrM("𝕨 •math.LCM 𝕩: Unexpected argument types");

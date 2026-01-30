@@ -437,8 +437,8 @@ u64 usum(B x) { // doesn't consume; will error on non-integers, or elements <0, 
     f64* p = f64any_ptr(x);
     for (usz i = 0; i < xia; i++) {
       f64 c = p[i];
-      if (!q_fu64(c)) expU_f64(c);
-      u64 ci = (u64)c;
+      u64 ci;
+      if (!q_fu64(&ci, c)) expU_f64(c);
       if (addOn(r,ci)) goto overflow;
     }
   } else {

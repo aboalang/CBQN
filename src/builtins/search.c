@@ -50,18 +50,18 @@ INIT_GLOBAL RangeFn getRange_fns[el_f64+1];
   #define SINGELI_FILE search
   #include "../utils/includeSingeli.h"
 #else
-  #define GETRANGE(T,CHK) bool getRange_##T(void* x0, i64* res, u64 ia) { \
+  #define GETRANGE(T,MAX,CHK) bool getRange_##T(void* x0, i64* res, u64 ia) { \
     assert(ia>0); T* x=x0; T min=*x,max=min; \
     { MAYBE_UNUSED T c=min; CHK; }           \
     for (ux i=1; i<ia; i++) { T c=x[i]; CHK; \
       {if(c<min)min=c;} {if(c>max)max=c;}    \
     }                                        \
-    res[0]=min; res[1]=max; return 1;        \
+    res[0]=min; res[1]=MAX; return 1;        \
   }
-  GETRANGE(i8,)
-  GETRANGE(i16,)
-  GETRANGE(i32,)
-  GETRANGE(f64, if (!q_fi64(c)) return 0)
+  GETRANGE(i8, max,)
+  GETRANGE(i16, max,)
+  GETRANGE(i32, max,)
+  GETRANGE(f64, ({ i64 ci; if (!q_fi64(&ci,max)) return 0; ci; }), i64 ci; if (!q_fi64(&ci,c)) return 0)
 #endif
 #if SINGELI_AVX2
   extern void (**const avx2_member_sort)(uint64_t*,void*,uint64_t,void*,uint64_t);

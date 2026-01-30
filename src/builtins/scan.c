@@ -390,8 +390,8 @@ B scan_c2(Md1D* d, B w, B x) { B f = d->f;
     
     if (rtid==n_add) { // +
       if (xe==el_bit) {
-        if (!q_i64(w)) goto base;
-        i64 wv = o2i64G(w);
+        i64 wv;
+        if (!q_i64(&wv, w)) goto base;
         if (wv<=(-(1LL<<53)) || wv>=(1LL<<53) || wv+(i64)ia >= (1LL<<53)) goto base;
         B t = scan_add_bool(x, ia);
         return wv==0? t : C2(add, w, t);
