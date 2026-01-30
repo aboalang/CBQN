@@ -120,7 +120,8 @@ B listVariations_c2(B t, B w, B x) {
     if      (xe==el_i8 ) { i8*  xp = i8any_ptr (x); for (usz i = 0; i < xia; i++) { if (xp[i]>max) max=xp[i]; if (xp[i]<min) min=xp[i]; } }
     else if (xe==el_i16) { i16* xp = i16any_ptr(x); for (usz i = 0; i < xia; i++) { if (xp[i]>max) max=xp[i]; if (xp[i]<min) min=xp[i]; } }
     else if (xe==el_i32) { i32* xp = i32any_ptr(x); for (usz i = 0; i < xia; i++) { if (xp[i]>max) max=xp[i]; if (xp[i]<min) min=xp[i]; } }
-    else if (xe==el_f64) { f64* xp = f64any_ptr(x); for (usz i = 0; i < xia; i++) { if (xp[i]>max) max=xp[i]; if (xp[i]<min) min=xp[i]; if(!q_fi32(xp[i])) goto onlyF64; } }
+    else if (xe==el_f64) { f64* xp = f64any_ptr(x); for (usz i = 0; i < xia; i++) { if(!q_fi32(xp[i])) goto onlyF64;
+                                                                                    if (xp[i]>max){max=xp[i];}if (xp[i]<min) min=xp[i]; } }
     else {
       bool notFloat = false;
       for (usz i = 0; i < xia; i++) {

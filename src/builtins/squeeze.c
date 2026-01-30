@@ -67,9 +67,8 @@ static B squeeze_nope(B x, Arr* xa, u8 type, ux ia) {
   SQFN_NUM(f64,
     f64* xp = f64anyv_ptr(xa);
     for (ux i = 0; i < ia; i++) {
-      f64 cf = xp[i];
-      i32 c = (i32)cf;
-      if (c!=cf) goto squeezed;
+      i32 c;
+      if (!q_fi32o(&c, xp[i])) goto squeezed;
       or|= ((u32)c & ~1) ^ (u32)(c>>31);
     }
     goto mostI32;

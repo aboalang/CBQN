@@ -9,6 +9,11 @@ def q_chr{x} = bcall{u1, 'q_c32', x}
 def q_chr{(u8 ),x} = bcall{u1, 'q_c8',  x}
 def q_chr{(u16),x} = bcall{u1, 'q_c16', x}
 def q_chr{(u32),x} = bcall{u1, 'q_c32', x}
+def q_fint{T, x:(f64) if isint{T}} = {
+  buf:= undefined{T, 1};
+  def ok = emit{u1, merge{'q_f', fmt_type{T}, if (width{T}==64) '' else 'o'}, buf, x}
+  tup{load{buf}, ok}
+}
 
 def cbqn_c32Tag{} = emit{u64, '', 'C32_TAG'}
 def cbqn_tagTag{} = emit{u64, '', 'TAG_TAG'}

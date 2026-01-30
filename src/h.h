@@ -498,6 +498,9 @@ FORCE_INLINE bool q_fu32(f64 x) { return x==(f64)(u32)     x; }
 FORCE_INLINE bool q_fi64(i64* out, f64 x) { return x == (f64) (*out = (i64)x); }
 FORCE_INLINE bool q_fu64(u64* out, f64 x) { return x == (f64) (*out = (u64)x); }
 FORCE_INLINE bool q_fusz(usz* out, f64 x) { return x == (f64) (*out = (usz)x); }
+FORCE_INLINE bool q_fi8o(i8*  out, f64 x) { return x == (f64) (*out = (i8) (i32)x); }
+FORCE_INLINE bool q_fi16o(i16*out, f64 x) { return x == (f64) (*out = (i16)(i32)x); }
+FORCE_INLINE bool q_fi32o(i32*out, f64 x) { return x == (f64) (*out = (i32)x); }
 
 FORCE_INLINE bool q_bit(B x) { return isNum(x) & (x.f==0 | x.f==1); }
 FORCE_INLINE bool q_i8 (B x) { return q_fi8 (x.f); }
@@ -507,6 +510,7 @@ FORCE_INLINE bool q_f64(B x) { return isF64(x); }
 FORCE_INLINE bool q_i64(i64* out, B x) { return q_fi64(out, x.f); }
 FORCE_INLINE bool q_u64(u64* out, B x) { return q_fu64(out, x.f); }
 FORCE_INLINE bool q_usz(usz* out, B x) { return q_fusz(out, x.f); }
+FORCE_INLINE bool q_i32o(i32*out, B x) { return q_fi32o(out, x.f); }
 
 FORCE_INLINE bool q_ibit(i64 x) { return x==0 | x==1; }
 FORCE_INLINE bool q_ubit(u64 x) { return x==0 | x==1; }

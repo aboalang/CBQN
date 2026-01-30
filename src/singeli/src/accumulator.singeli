@@ -214,7 +214,7 @@ def sum_accumulator{DE==i64, unr, VT=[k]SE==i32 if hasarch{'X86_64'}} = { # TODO
 
 def assoc_accumulator{F if is{F,__min} or is{F,__max}, unr if knum{unr}, VT=([16]i8), ident if hasarch{'X86_64'} and not hasarch{'SSE4.1'}} = {
   def adda{M, a, c:([16]i8)} = mask_ident{F,ident}{M, a, ty_u{c} ^ [16]u8**128}
-  def {acc, ..._} = acc_impl{adda, F, unr, [16]u8, u8, (ident%256) ^ 128}
+  def {acc, ..._} = acc_impl{adda, F, unr, [16]u8, u8, (if (hastype{ident,i8}) ty_u{ident} else ident%256) ^ 128}
   def me{...} = acc
   def me{'scal_result'} = i8~~(acc{'scal_result'} ^ 128)
   extend finish{me}

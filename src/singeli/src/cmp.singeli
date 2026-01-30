@@ -17,23 +17,22 @@ fn cmpIX(dst:(*u64), len:ux, x:(u64), v:(u1)) : void = {
 def eqne{op} = same{op,__eq} or same{op,__ne}
 
 def pathAS{dst, len, T, op, x if issigned{T}} = {
-  def R{f if eqne{op}} = {
+  def round{f if eqne{op}} = {
     if (rare{__floor{f}!=f}) fillbits{dst, len, op{0,1}, x} # also includes check for NaN/sNaN
-    ftrunc{i64,f}
+    f
   }
-  def R{f if same{op,__lt} or same{op,__ge}} = ftrunc{i64,__ceil{f}}
-  def R{f if same{op,__gt} or same{op,__le}} = ftrunc{i64,__floor{f}}
+  def round{f if same{op,__lt} or same{op,__ge}} = __ceil{f}
+  def round{f if same{op,__gt} or same{op,__le}} = __floor{f}
   
   xf:f64 = interp_f64{x}
-  xi64:i64 = R{xf}
-  xT:T = trunc{T, xi64}
+  def {xT, ok} = q_fint{T, round{xf}}
   def nanchk{} = {
     if(~eqne{op}) { # NaN was already checked for ≠/=
       if (isNaN{xf}) { call{cmpIX, dst, len, x, op{0,1}}; return{}; }
     }
   }
   if (not hasarch{'X86_64'}) nanchk{}
-  if (rare{promote{i64, xT}!=xi64}) {
+  if (rare{~ok}) {
     if (hasarch{'X86_64'}) nanchk{}
     fillbits{dst, len, op{0,xf}}
   }
@@ -115,7 +114,7 @@ fn bitAS{op}(dst:*u64, wr:*void, x:u64, len:ux) : void = { # show{'bitAS'}
   else    call{bit_cpy, dst, *u64~~wr, len}
 }
 
-def table{aa, F, w, G_bit, G_vec} = {
+def cmp_table{aa, F, w, G_bit, G_vec} = {
   tup{
     G_bit{},
     ...each{{E}=>{
@@ -126,8 +125,8 @@ def table{aa, F, w, G_bit, G_vec} = {
     }, tup{i8, i16, i32, f64, u8, u16, u32}}
   }
 }
-def tableAA{w, F, F_bit} = table{1, F, w, {} => bitAA{F_bit}, {V, u} => aa2bit{V, u, F}}
-def tableAS{w, F       } = table{0, F, w, {} => bitAS{F},     {V, u} => as2bit{V, u, F}}
+def tableAA{w, F, F_bit} = cmp_table{1, F, w, {} => bitAA{F_bit}, {V, u} => aa2bit{V, u, F}}
+def tableAS{w, F       } = cmp_table{0, F, w, {} => bitAS{F},     {V, u} => as2bit{V, u, F}}
 
 
 export_tab{'simd_eqAS', tableAS{arch_defvw{}, __eq}}; export_tab{'simd_eqAA', tableAA{arch_defvw{}, __eq, {a,b}=>a ^ ~b}}

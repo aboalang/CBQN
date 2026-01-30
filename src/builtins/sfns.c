@@ -35,12 +35,12 @@ Arr* cpyWithShape(B x) {
 FORCE_INLINE B m_vec2Base(B a, B b, bool fills) {
   if (isAtm(a)&isAtm(b)) {
     if (LIKELY(isNum(a)&isNum(b))) {
-      i32 ai=a.f; i32 bi=b.f;
-      if (RARE(ai!=a.f | bi!=b.f))        { f64* rp; B r = m_f64arrv(&rp, 2); rp[0]=o2fG(a); rp[1]=o2fG(b); return r; }
-      else if (q_ibit(ai)  &  q_ibit(bi)) { u64* rp; B r = m_bitarrv(&rp, 2); rp[0]=ai | (bi<<1);           return r; }
-      else if (ai==(i8 )ai & bi==(i8 )bi) { i8*  rp; B r = m_i8arrv (&rp, 2); rp[0]=ai;      rp[1]=bi;      return r; }
-      else if (ai==(i16)ai & bi==(i16)bi) { i16* rp; B r = m_i16arrv(&rp, 2); rp[0]=ai;      rp[1]=bi;      return r; }
-      else                                { i32* rp; B r = m_i32arrv(&rp, 2); rp[0]=ai;      rp[1]=bi;      return r; }
+      i32 ai; i32 bi;
+      if(RARE(!q_i32o(&ai,a)|!q_i32o(&bi,b))){f64* rp; B r = m_f64arrv(&rp, 2); rp[0]=o2fG(a); rp[1]=o2fG(b); return r; }
+      else if (q_ibit(ai)   &   q_ibit(bi)) { u64* rp; B r = m_bitarrv(&rp, 2); rp[0]=ai | (bi<<1);           return r; }
+      else if (ai==(i8 )ai  &  bi==(i8 )bi) { i8*  rp; B r = m_i8arrv (&rp, 2); rp[0]=ai;      rp[1]=bi;      return r; }
+      else if (ai==(i16)ai  &  bi==(i16)bi) { i16* rp; B r = m_i16arrv(&rp, 2); rp[0]=ai;      rp[1]=bi;      return r; }
+      else                                  { i32* rp; B r = m_i32arrv(&rp, 2); rp[0]=ai;      rp[1]=bi;      return r; }
     }
     if (isC32(b)&isC32(a)) {
       u32 ac=o2cG(a); u32 bc=o2cG(b);
@@ -153,8 +153,9 @@ NOINLINE Arr* reshape_one(usz nia, B x) {
   Arr* r;
   #define FILL(E,T,V) T* rp; r = m_##E##arrp(&rp,nia); fill_words(rp, V, (u64)nia*sizeof(T));
   if (isF64(x)) {
-    i32 n = (i32)x.f;
-    if (RARE(n!=x.f)) {
+    f64 xf = o2fG(x);
+    i32 n;
+    if (RARE(!q_fi32o(&n, xf))) {
       FILL(f64,f64,x.u)
     } else if (n==(i8)n) { // memset can be faster than writing words
       u8 b = n;

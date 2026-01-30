@@ -1,4 +1,5 @@
 include './base'
+include './cbqnDefs'
 include './mask'
 include './vecfold'
 include './hashtab'
@@ -298,25 +299,27 @@ export{'simd_member_u8', simd_member_u8}
 export{'simd_index_tab_u8', simd_index_tab_u8{usz}}
 
 # following RangeFn's specification in calls.h, whether it's necessary to return 0 or otherwise accumulating & converting to i64 may produce incorrect results
-def bad_float_i64{x:T=[_](f64)} = {
+# first tuple element signifies whether this may give true for 2⋆63
+def bad_float_i64{} = tup{0, {x:T=[_](f64)} => {
   a:= __abs{x}
   s:= T**(1<<53)
   __min{s,a} != s-(s-a) # ~ ((a<=s) & (a == s-(s-a)))
-}
-def bad_float_i64{x:T=[_](f64) if hasarch{'SSE4.1'}} = (x!=__floor{x}) | (__abs{x}>T**(1<<53))
-def bad_float_i64{x:T=[_](f64) if hasarch{'AARCH64'}} = x != cvt{f64, cvt{i64, x}}
+}}
+def bad_float_i64{if hasarch{'SSE4.1'}}  = tup{0, {x:T=[_](f64)} => (x!=__floor{x}) | (__abs{x}>T**(1<<53))}
+def bad_float_i64{if hasarch{'AARCH64'}} = tup{1, {x:T=[_](f64)} => x != cvt{f64, cvt{i64, x}}}
 
 fn getRange{E}(x0:*void, res:*i64, n:u64) : u1 = {
   assert{n>0}
   x:= *E~~x0
-  min1:= undefined{E}
-  max1:= undefined{E}
-  if (has_simd) {
+  min1:= if (E!=f64) E~~maxvalue{E} else (if (has_simd)  f64~~(1<<62) else i64~~maxvalue{i64})
+  max1:= if (E!=f64) E~~minvalue{E} else (if (has_simd) -f64~~(1<<62) else i64~~minvalue{i64})
+  def extra_check = if (has_simd) {
+    def {extra_check, bad_float_i64} = bad_float_i64{}
     def bulk = arch_defvw{}/width{E}
     def VT = [bulk]E
     def unr = tern{E==f64 and hasarch{'X86_64'}, 1, 2}
-    def min_a = assoc_accumulator{__min, unr, VT}
-    def max_a = assoc_accumulator{__max, unr, VT}
+    def min_a = assoc_accumulator{__min, unr, VT, min1}
+    def max_a = assoc_accumulator{__max, unr, VT, max1}
     @for_mu{bulk, unr, mu_extra{min_a,max_a}}(cx in tup{VT,x}, M in 'm' over is to n) {
       if (E==f64 and any_hom{M, ...each{bad_float_i64, cx}}) return{0}
       min_a{'acc', M, cx}
@@ -324,16 +327,18 @@ fn getRange{E}(x0:*void, res:*i64, n:u64) : u1 = {
     }
     min1 = min_a{'vec_result'}
     max1 = max_a{'vec_result'}
+    if (E==f64 and extra_check and max1 == 1<<63) return{0}
   } else {
-    min1 = max1 = *x
     @for (x over i to n) {
-      if (E==f64 and rare{x != emit{f64, '', emit{i64, '', x}}}) return{0}
-      min1 = __min{min1, x}
-      max1 = __max{max1, x}
+      def {xi, ok} = if (E==f64) q_fint{i64,x} else tup{x,1}
+      if (not ok) return{0}
+      min1 = __min{min1, xi}
+      max1 = __max{max1, xi}
     }
+    0
   }
-  store{res, 0, cast_i{i64, min1}}
   store{res, 1, cast_i{i64, max1}}
+  store{res, 0, cast_i{i64, min1}}
   1
 }
 

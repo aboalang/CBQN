@@ -204,8 +204,8 @@ FORCE_INLINE B m_oneItemArr(B x, ur rr) {
   u64 data; assert(sizeof(f64)<=8);
   u8 t; MAYBE_UNUSED u64 sz;
   if (isF64(x)) {
-    i32 xi = (i32)x.f;
-    if (RARE(xi!=x.f))    { f64 v=x.f; memcpy(&data, &v, sz=sizeof(v)); t=t_f64arr; }
+    i32 xi;
+    if (!q_i32o(&xi, x))  { f64 v=x.f; memcpy(&data, &v, sz=sizeof(v)); t=t_f64arr; }
     else if (q_ibit(xi))  { u64 v=xi;  memcpy(&data, &v, sz=sizeof(v)); t=t_bitarr; }
     else if (xi==(i8 )xi) { i8  v=xi;  memcpy(&data, &v, sz=sizeof(v)); t=t_i8arr; }
     else if (xi==(i16)xi) { i16 v=xi;  memcpy(&data, &v, sz=sizeof(v)); t=t_i16arr; }
