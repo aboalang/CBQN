@@ -227,7 +227,7 @@ B asrt_c2(B t, B w, B x) {
 }
 B casrt_c2(B t, B w, B x) {
   if (LIKELY(isF64(x) && o2fG(x)==1)) { dec(w); return x; }
-  B fullpath = COMPS_ACTIVE()? load_fullpath(COMPS_CREF(path), COMPS_CREF(name)) : bi_N;
+  B fullpath = COMPS_ACTIVE() && o2i(COMPS_CREF(kind))!=COMP_REPL? load_fullpath(COMPS_CREF(path), COMPS_CREF(name)) : bi_N;
   unwindCompiler();
   dec(x);
   if (isArr(w) && IA(w)==2) {
@@ -692,7 +692,7 @@ B rebqn_c1(B t, B x) {
   if (replVal==0) {
     scVal = bi_N;
   } else {
-    Block* initBlock = bqn_comp(m_c8vec_0("\"(REPL initializer)\""), bi_N);
+    Block* initBlock = bqn_comp(m_c8vec_0("\"(REPL initializer)\""), bi_N, def_re, NULL, COMP_UNK, false, false);
     Scope* sc = m_scope(initBlock->bodies[0], NULL, 0, 0, NULL);
     scVal = tag(sc,OBJ_TAG);
     ptr_dec(initBlock);
@@ -706,7 +706,7 @@ B rebqn_c1(B t, B x) {
 }
 B repl_c2(B t, B w, B x) {
   vfyStr(x, "REPL", "𝕩");
-  return repl_exec(x, prep_state(w, "REPL"), nfn_objU(t));
+  return rerepl_exec(x, prep_state(w, "REPL"), nfn_objU(t));
 }
 B repl_c1(B t, B x) {
   return repl_c2(t, emptyHVec(), x);

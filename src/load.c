@@ -209,7 +209,7 @@ B bqn_fmt(B x) { return x; }
 B bqn_repr(B x) { return x; }
 #endif
 
-static NOINLINE void comps_push(B src, B state, B re) {
+static NOINLINE void comps_push(B src, B state, B re, u8 kind) {
   assert(comps_curr == NULL);
   HArr* r = m_harr0v(comps_max).c;
   if (q_N(state)) {
@@ -224,53 +224,44 @@ static NOINLINE void comps_push(B src, B state, B re) {
   COMPS_REF(r, src)    = inc(src);
   COMPS_REF(r, re)     = inc(re);
   COMPS_REF(r, envPos) = m_f64(envCurr-envStart);
+  COMPS_REF(r, kind)   = m_f64(kind);
   comps_curr = r;
 }
 
-#define COMPS_PUSH(STR, STATE, RE)   \
-  comps_push(STR, STATE, RE);        \
+#define COMPS_PUSH(STR, STATE, RE, KIND) \
+  comps_push(STR, STATE, RE, KIND);      \
   if (CATCH) { COMPS_POP; rethrow(); }
 
 #define COMPS_POP ({ ptr_dec(comps_curr); comps_curr = NULL; })
 
-static NOINLINE Block* bqn_compc(B str, B state, B re) { // consumes str,state
+NOINLINE Block* bqn_comp(B str, B state, B re, Scope* sc, u8 kind, bool loose, bool noNS) {
+  if (loose && (!sc || sc->psc)) thrM("VM compiler: REPL mode must be used at top level scope");
   str = squeeze_chrOut(str);
-  COMPS_PUSH(str, state, re);
-  B* o = harr_ptr(re);
-  Block* r = load_buildBlock(c2G(o[re_compFn], incG(o[re_compOpts]), inc(str)), str, COMPS_CREF(path), COMPS_CREF(name), NULL, 0);
-  COMPS_POP; popCatch();
-  return r;
-}
-Block* bqn_comp(B str, B state) {
-  return bqn_compc(str, state, def_re);
-}
-Block* bqn_compScc(B str, B state, B re, Scope* sc, bool loose, bool noNS) {
-  str = squeeze_chrOut(str);
-  COMPS_PUSH(str, state, re);
-  B* o = harr_ptr(re);
+  COMPS_PUSH(str, state, re, kind);
+  
   B vName = emptyHVec();
   B vDepth = emptyIVec();
-  if (loose && (!sc || sc->psc)) thrM("VM compiler: REPL mode must be used at top level scope");
   i32 depth = loose? -1 : 0;
   Scope* csc = sc;
   while (csc) {
     B vars = listVars(csc);
     usz am = IA(vars);
     vName = vec_join(vName, vars);
-    for (usz i = 0; i < am; i++) vDepth = vec_addN(vDepth, m_i32(depth));
+    for (ux i = 0; i < am; i++) vDepth = vec_addN(vDepth, m_i32(depth));
     csc = csc->psc;
     depth++;
   }
-  Block* r = load_buildBlock(c2G(o[re_compFn], m_lvB_4(incG(o[re_rt]), incG(bi_sys), vName, vDepth), inc(str)), str, COMPS_CREF(path), COMPS_CREF(name), sc, sc!=NULL? (noNS? -1 : 1) : 0);
+  
+  B* o = harr_ptr(re);
+  B args = m_lvB_4(incG(o[re_rt]), incG(bi_sys), vName, vDepth);
+  Block* r = load_buildBlock(c2G(o[re_compFn], args, inc(str)), str, COMPS_CREF(path), COMPS_CREF(name), sc, sc!=NULL? (noNS? -1 : 1) : 0);
+  r->comp->kind = kind; // TODO push down into an arg of compileAll
   COMPS_POP; popCatch();
   return r;
 }
-NOINLINE Block* bqn_compSc(B str, B state, Scope* sc, bool repl) {
-  return bqn_compScc(str, state, def_re, sc, repl, false);
-}
 
 B bqn_exec(B str, B state) { // consumes all
-  return evalFunBlockConsume(bqn_comp(str, state));
+  return evalFunBlockConsume(bqn_comp(str, state, def_re, NULL, COMP_UNK, false, false));
 }
 
 GLOBAL B str_all, str_none;
@@ -278,7 +269,6 @@ void init_comp(B* new_re, B* prev_re, B prim, B sys) {
   new_re[re_map] = m_importMap();
   if (q_N(prim)) {
     new_re[re_compFn]   = inc(prev_re[re_compFn]);
-    new_re[re_compOpts] = inc(prev_re[re_compOpts]);
     new_re[re_rt]       = inc(prev_re[re_rt]);
     new_re[re_glyphs]   = inc(prev_re[re_glyphs]);
   } else {
@@ -319,7 +309,6 @@ void init_comp(B* new_re, B* prev_re, B prim, B sys) {
     new_re[re_rt]       = prh.b;
     new_re[re_glyphs]   = inc(rb);
     new_re[re_compFn]   = c1(load_compgen, rb);
-    new_re[re_compOpts] = m_lvB_2(inc(prh.b), incG(bi_sys));
   }
   
   if (q_N(sys)) {
@@ -407,14 +396,14 @@ void comps_getSysvals(B* res) {
 }
 
 B rebqn_exec(B str, B state, B re) {
-  return evalFunBlockConsume(bqn_compc(str, state, re));
+  return evalFunBlockConsume(bqn_comp(str, state, re, NULL, COMP_UNK, false, false));
 }
-B repl_exec(B str, B state, B re) {
+B rerepl_exec(B str, B state, B re) {
   B* op = harr_ptr(re);
   i32 replMode = o2iG(op[re_mode]);
   if (replMode>0) {
     Scope* sc = c(Scope, op[re_scope]);
-    Block* block = bqn_compScc(str, state, re, sc, replMode==2, true);
+    Block* block = bqn_comp(str, state, re, sc, COMP_UNK, replMode==2, true);
     ptr_dec(sc->body);
     sc->body = ptr_inc(block->bodies[0]);
     B res = execBlockInplace(block, sc);
@@ -465,7 +454,7 @@ void load_init() { // very last init function
   for (u64 i = 0; i < RT_LEN; i++) inc(fruntime[i]);
   B frtObj = m_caB(RT_LEN, fruntime);
   
-  B load_compOpts, load_rt;
+  B load_rt;
   #if !NO_RT
     B provide[] = {
       /* actual provide: */
@@ -564,7 +553,7 @@ void load_init() { // very last init function
     rt_invFnRegFn = rt_invFnSwapFn = invalidFn_c1;
     rt_invFnReg   = rt_invFnSwap   = incByG(bi_invalidFn, 2);
   #endif
-  load_compOpts = m_lvB_2(load_rt, incG(bi_sys));
+  
   
   
   #ifdef PRECOMP
@@ -602,8 +591,7 @@ void load_init() { // very last init function
     #endif
     HArr_p ps = m_harr0v(re_max);
     ps.a[re_compFn] = load_comp;
-    ps.a[re_compOpts] = load_compOpts;
-    ps.a[re_rt] = incG(load_rt);
+    ps.a[re_rt] = load_rt;
     ps.a[re_map] = m_importMap();
     ps.a[re_glyphs] = load_glyphs;
     ps.a[re_sysNames] = incG(def_sysNames);
@@ -631,7 +619,7 @@ static NOINLINE B fileState(B path, B args) { // consumes args
 }
 B bqn_execFileRe(B path, B args, B re) {
   B state = fileState(path, args);
-  return evalFunBlockConsume(bqn_compc(path_chars(path), state, re));
+  return evalFunBlockConsume(bqn_comp(path_chars(path), state, re, NULL, COMP_UNK, false, false));
 }
 B bqn_execFile(B path, B args) { // consumes both
   B state = fileState(path, args);
@@ -663,17 +651,10 @@ B bqn_explain(B str, B vars) { // consumes str & vars
       gc_add(load_explain = evalFunBlockConsume(expl_b));
     }
     
-    B c;
-    COMPS_PUSH(str, bi_N, def_re);
-    B compOpts;
-    if (q_N(vars) || IA(vars) == 0) {
-      compOpts = incG(o[re_compOpts]);
-      if (!q_N(vars)) decG(vars);
-    } else {
-      B vDepth = i64EachDec(-1, incG(vars));
-      compOpts = m_lvB_4(incG(o[re_rt]), incG(bi_sys), vars, vDepth);
-    }
-    c = c2(o[re_compFn], compOpts, inc(str));
+    COMPS_PUSH(str, bi_N, def_re, COMP_REPL);
+    B vDepth = i64EachDec(-1, incG(vars));
+    B compOpts = m_lvB_4(incG(o[re_rt]), incG(bi_sys), vars, vDepth);
+    B c = c2(o[re_compFn], compOpts, inc(str));
     COMPS_POP; popCatch();
     
     B ret = c2(load_explain, c, str);

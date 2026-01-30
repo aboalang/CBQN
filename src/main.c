@@ -567,8 +567,7 @@ static NOINLINE i64 readInt(char** p) {
 
 B m_state(B path, B name, B args);
 NOINLINE B gsc_exec_inplace(B src, char* name, B args) {
-  Block* block = bqn_compSc(src, m_state(incG(replPath), m_c8vec_0(name), args), gsc, true);
-  block->comp->kind = COMP_REPL;
+  Block* block = bqn_comp(src, m_state(incG(replPath), m_c8vec_0(name), args), def_re, gsc, COMP_UNK, true, false);
   ptr_dec(gsc->body); // redirect new errors to the newly executed code; initial scope had 0 vars, so this is safe
   gsc->body = ptr_inc(block->bodies[0]);
   B r = execBlockInplace(block, gsc);
@@ -808,6 +807,7 @@ void cbqn_runLine0(char* ln, i64 read) {
 #endif
     } else if (isCmd(cmdS, &cmdE, "e ") || isCmd(cmdS, &cmdE, "explain ")) {
       B vars = listVars(gsc);
+      if (q_N(vars)) vars = emptyHVec();
       HArr* expla = toHArr(bqn_explain(utf8Decode0(cmdE), vars));
       usz ia=PIA(expla);
       for(usz i=0; i<ia; i++) {
@@ -824,8 +824,7 @@ void cbqn_runLine0(char* ln, i64 read) {
     code = utf8Decode0(ln);
     output = 1;
   }
-  Block* block = bqn_compSc(code, m_state(incG(replPath), incG(replName), emptySVec()), gsc, true);
-  block->comp->kind = COMP_REPL;
+  Block* block = bqn_comp(code, m_state(incG(replPath), incG(replName), emptySVec()), def_re, gsc, COMP_REPL, true, false);
   
   ptr_dec(gsc->body);
   gsc->body = ptr_inc(block->bodies[0]);
