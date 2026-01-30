@@ -886,6 +886,9 @@ void cbqn_runLine0(char* ln, i64 read) {
 }
 
 void cbqn_runLine(char* ln, i64 len) {
+  #if DEBUG
+  ux cfh = cfHeight();
+  #endif
   Run e = run_start();
   if(CATCH) {
     cbqn_takeInterrupts(false);
@@ -906,6 +909,7 @@ void cbqn_runLine(char* ln, i64 len) {
   run_end(e);
   cbqn_takeInterrupts(false);
   popCatch();
+  debug_assert(cfh == cfHeight());
 }
 
 #if WASM

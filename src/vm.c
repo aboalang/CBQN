@@ -1356,6 +1356,9 @@ void popCatch() {
   cf--;
 }
 #endif
+ux cfHeight() {
+  return cf - cfStart;
+}
 
 NOINLINE B vm_fmtPoint(B src, B prepend, B path, usz cs, usz ce) { // consumes prepend
   SGetU(src)

@@ -255,6 +255,7 @@ NOINLINE B vm_fmtPoint(B src, B prepend, B path, usz cs, usz ce); // consumes pr
 NOINLINE void printErrMsg(B msg);
 NOINLINE void unwindEnv(Env* envNew); // envNew==envStart-1 for emptying the env stack
 NOINLINE void unwindCompiler(void); // unwind to the env of the invocation of the compiler; UB when not in compiler!
+ux cfHeight(); // number of active catch frames
 
 
 
