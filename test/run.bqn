@@ -13,6 +13,7 @@ Trim ← {((∨`⌾⌽∧∨`)𝕩≠' ')/𝕩}
   •Out "  debug            Disable tests that aren't runnable in debug"
   •Out "  no-catch         Disable catching errors in tests not expected to error"
   •Out "  update-messages  Auto-update error messages in tests"
+  •Out "  update-values    Auto-update test results (might want to reformat them afterwards though)"
   •Out "  ignore-messages  Don't warn about incorrect error messages"
   •Out "  bin-search       Binary search for some property. Next argument should be /[01]*/, with a 1 appended every time the property is matched, and a 0 otherwise"
   •Out "  seed=123         Random seed for tests that care (default=1; seed=u will choose a random seed)"
@@ -30,11 +31,12 @@ o ← {
     args ↩ (¬n∨𝕩)/args
   }⍟(∨´) "bin-search"⊸≡¨ args
   
-  named ← "run"‿"lint"‿"update-messages"‿"slow"‿"ignore-messages"‿"noerr"‿"heapverify"‿"debug"‿"no-catch"‿"seed"
+  named ← "run"‿"lint"‿"update-messages"‿"slow"‿"ignore-messages"‿"noerr"‿"heapverify"‿"debug"‿"no-catch"‿"seed"‿"update-values"
   i ← named⊐{𝕩↑˜⊑𝕩⊐'='}¨ args
   run    ⇐ ∨´i=0
   lint   ⇐ ∨´i=1
-  update ⇐ ∨´i=2
+  updMsgs⇐ ∨´i=2
+  updVals⇐ ∨´i=10
   slow   ⇐ ∨´i=3
   errm   ⇐¬∨´i=4
   noerr  ⇐ ∨´i=5
@@ -58,9 +60,9 @@ o ← {
   ⟩ ⇐ 32‿0‿0‿0‿0‿0‿0 {(≠𝕨)↑ 𝕩 ∾ (≠𝕩)↓𝕨} {⟨P⇐Properties⟩: @P@; ⟨⟩} •internal
   
   noerr∨↩ heapverify
-  update∧↩ ¬heapverify
+  updMsgs∧↩ ¬heapverify
   files ⇐ (i=≠named)/args
-  run ↩ update ∨ ¬∨´lint‿update
+  run ↩ updVals ∨ updMsgs ∨ ¬∨´lint‿updMsgs
 }
 
 _catch_ ← {o.noCatch? 𝔽; 𝔽⎊𝔾}
@@ -199,35 +201,44 @@ Run ← { 𝕊 testname:
           ok? Bad "Expected error, but didn't get one" ⋄ @;
           ⟨"Expected: "∾exp ⋄ "Got:      "∾got⟩ Bad⍟o.errm "Wrong error message"
           badMessage+↩ 1
-          got
+          1‿got
         }
       };
       ns‿"equal"‿str‿exp: {
         ok‿got ← (1⋈Eval)_catch_(0⋈ErrMsg) str
         exp ↩ EvalS exp
         {
-          ¬ok? Bad "Expected value, but got error: "∾got;
+          ¬ok? Bad "Expected value, but got error: "∾got ⋄ @;
           got •internal.EEqual exp? @;
           ⟨"Expected: "∾•Repr exp ⋄ "Got:      "∾•Repr⎊•Show got⟩ Bad "Wrong value"
-          @
+          2‿got
         }
-        @
       }
     }∘{currLn↩(⊑𝕩).ln ⋄ 𝕩}¨ toRun
     
     {𝕊:
-      res‿desc ← ({@≡𝕩? 0; (¬⊑(@+10)∊𝕩) ∧ ¬∨´"TEST FAIL"⍷𝕩}¨ results)⊸/¨ results‿toRun
+      res‿desc ← ({
+        1‿msg: o.updMsgs? (¬⊑(@+10)∊msg) ∧ ¬∨´"TEST FAIL"⍷msg;
+        2‿msg: o.updVals;
+        0
+      }¨ results)⊸/¨ results‿toRun
       0≠≠res?
         •Out ∾⟨"Update ", •Repr≠res, " entr", (1<≠res)⊑"y"‿"ies", " in ", filename, "?"⟩
         {
           ¬⊑"yY"∊˜⊑'n'∾˜•GetLine@? •Out "Not updating.";
-          [idxs, upd] ← ⍉>res {new𝕊⟨⟨ln⟩, "error", str, ·⟩: ln ⋈ ∾⟨"!", •Repr new, " ", ⊑∘⊐⟜'%'⊸↓ ln⊑lns⟩}¨ desc
+          
+          [idxs, upd] ← ⍉>res {
+            1‿new 𝕊 ⟨⟨ln⟩, "error", str, ·⟩: ln ⋈ ∾⟨"!", •Repr new, " ", ⊑∘⊐⟜'%'⊸↓ ln⊑lns⟩;
+            2‿new 𝕊 ⟨⟨ln⟩, "equal", str, ·⟩: ln ⋈ ∾⟨{⋈⁼/" %% "⍷𝕩}⊸↑ ln⊑lns, " %% ", •Repr new⟩;
+            !𝕨⋈𝕩
+          }¨ desc
+          
           "Refusing to write over changed file" ! lns ≡ •FLines fullfile
           fullfile •FLines lns {×≠𝕩? ⋈⁼𝕩; 𝕨}¨ (≠lns)↑idxs⊔upd
           •Out "Updated."
         }
       ;@
-    }⍟⊢ o.update
+    }⍟⊢ o.updMsgs ∨ o.updVals
     skipm ← (×skipped)/∾⟨" (", •Repr skipped, " skipped)"⟩
     ran ← (≠tests)-skipped
     {
