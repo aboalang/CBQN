@@ -379,7 +379,7 @@ fn saturate{F,T,...up}(dst:*void, src:*void, n:u64) : void = {
     x := if (F==f64) (if (select{up,0}) __floor else __ceil){xf} else xf
     if (x<a) d = a
     else if (not x<b) d = b # Odd comparison form to convert NaNs to b here
-    else d = cast_i{T, xf}
+    else d = cast_i{T, x}
   }
 }
 
