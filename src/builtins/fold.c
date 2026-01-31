@@ -103,8 +103,8 @@ static i64 bit_diff(u64* x, u64 am) {
   static f64 sum_##T(void* xv, usz ia, f64 init) {               \
     usz b=1<<(M-W); i64 lim = (1ull<<53) - (1ull<<M);            \
     T* xp = xv;                                                  \
-    f64 r=init; i64 c=init; usz i0=ia;                           \
-    if (c == init) {                                             \
+    f64 r=init; i64 c; usz i0=ia;                                \
+    if (q_fi64(&c, init)) {                                      \
       while (i0>0 && -lim<=c && c<=lim) {                        \
         usz e=i0; i0=(i0-1)&~(b-1);                              \
         c+=sum_small_##T(xp+i0, e-i0);                           \
@@ -362,7 +362,7 @@ B fold_c2(Md1D* d, B w, B x) { B f = d->f;
     if (!isF64(w) || xe>el_f64) goto base;
     f64 wf = o2fG(w);
     if (xe==el_bit) {
-      i32 wi = wf; if (wi!=wf) goto base;
+      i32 wi; if (!q_fi32o(&wi, wf)) goto base;
       u64* xp = bitany_ptr(x);
       if (rtid==n_add) { B r = m_f64(wi            + bit_sum (xp, ia)); decG(x); return r; }
       if (rtid==n_sub) { B r = m_f64((ia&1?-wi:wi) + bit_diff(xp, ia)); decG(x); return r; }
@@ -380,10 +380,10 @@ B fold_c2(Md1D* d, B w, B x) { B f = d->f;
     }
     if (rtid==n_floor) { f64 r=wf; f64 m=min_fns[xe-el_i8](tyany_ptr(x), ia); if (m<r) r=m; decG(x); return m_f64(r); } // ⌊
     if (rtid==n_ceil ) { f64 r=wf; f64 m=max_fns[xe-el_i8](tyany_ptr(x), ia); if (m>r) r=m; decG(x); return m_f64(r); } // ⌈
-    i32 wi = wf;
+    i32 wi; bool wi32 = q_fi32o(&wi, wf);
     if (rtid==n_mul | rtid==n_and) { // ×/∧
       void *xv = tyany_ptr(x);
-      bool isint = xe<=el_i32 && wi==wf;
+      bool isint = xe<=el_i32 && wi32;
       u8 sel = xe - el_i8;
       f64 r = isint ? prod_int_fns[sel](xv, ia, wi)
                     : prod_fns[sel](xv, ia, wf);

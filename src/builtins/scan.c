@@ -186,7 +186,7 @@ B scan_max_num(B x, u8 xe, u64 ia) { MINMAX(max,>,MIN,or ,asc) }
     T* xp=T##any_ptr(x); T* rp; r=m_##T##arrc(&rp, x); MINMAX_SCAN(T,N,C,wv); \
   break; }
 #define MINMAX2(NAME,C,INIT,BIT,BI,ORD) \
-  i32 wv=0; if (q_i32(w)) { wv=o2fG(w); } else { x=taga(cpyF64Arr(x)); xe=el_f64; } \
+  i32 wv; if (!q_i32o(&wv,w)) { x=taga(cpyF64Arr(x)); xe=el_f64; } \
   B r; switch (xe) { default:UD;           \
     case el_bit: if (wv C BI) r=C2(shape,m_f64(ia),w); else return scan_##BIT(x, ia); break; \
     MM2_ICASE(i8 ,NAME,C,I8_##INIT )       \
@@ -219,10 +219,11 @@ static B scan_plus(f64 r0, B x, u8 xe, usz ia) {
   assert(xe!=el_bit && elNum(xe));
   B r; void* rp = m_tyarrc(&r, xe==el_f64? sizeof(f64) : sizeof(i32), x, xe==el_f64? t_f64arr : t_i32arr);
   #if SINGELI
+    i32 r0i;
     switch(xe) { default:UD;
-      case el_i8:  { if (!q_fi32(r0) || si_scan_plus_i8_i32 (i8any_ptr(x),  r0, rp, ia)!=ia) goto cs_i8_f64;  decG(x); return r; }
-      case el_i16: { if (!q_fi32(r0) || si_scan_plus_i16_i32(i16any_ptr(x), r0, rp, ia)!=ia) goto cs_i16_f64; decG(x); return r; }
-      case el_i32: { if (!q_fi32(r0) || si_scan_plus_i32_i32(i32any_ptr(x), r0, rp, ia)!=ia) goto cs_i32_f64; decG(x); return r; }
+      case el_i8:  { if (!q_fi32o(&r0i,r0) || si_scan_plus_i8_i32 (i8any_ptr(x),  r0i, rp, ia)!=ia) goto cs_i8_f64;  decG(x); return r; }
+      case el_i16: { if (!q_fi32o(&r0i,r0) || si_scan_plus_i16_i32(i16any_ptr(x), r0i, rp, ia)!=ia) goto cs_i16_f64; decG(x); return r; }
+      case el_i32: { if (!q_fi32o(&r0i,r0) || si_scan_plus_i32_i32(i32any_ptr(x), r0i, rp, ia)!=ia) goto cs_i32_f64; decG(x); return r; }
       case el_f64: { f64* xp=f64any_ptr(x); f64 c=r0; for (usz i=0; i<ia; i++) { c+= xp[i];  ((f64*)rp)[i]=c; } decG(x); return r; }
     }
     cs_i8_f64: { x=taga(cpyI16Arr(x)); goto cs_i16_f64; }
