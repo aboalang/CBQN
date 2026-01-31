@@ -619,7 +619,7 @@ void cbqn_runLine0(char* ln, i64 read) {
   B code;
   int output; // 0-no; 1-formatter; 2-internal
   int mode = 0; // 0: regular execution; 1: single timing; 2: many timings; 3: second-limited timing; 4: profile; 4: profile ip
-  i32 timeRep = 0;
+  i64 timeRep = 0;
   f64 timeNanos = -1;
   i64 profile = -1;
   if (ln[0] == ')') {
@@ -664,18 +664,19 @@ void cbqn_runLine0(char* ln, i64 read) {
       char* repE = cmdE;
       mode = 2;
       #if NO_RYU
-        i64 am = readInt(&repE);
+        timeRep = readInt(&repE);
       #else
         while ((*repE>='0' & *repE<='9') || *repE=='.' || *repE=='e') repE++;
-        if (repE-cmdE >= 40) { printf("Timing repetition count too large\n"); return; }
         ux chrs = repE-cmdE;
+        if (chrs >= 40) { largeRep: printf("Timing repetition count too large\n"); return; }
+        if (chrs == 0) { printf("Timing repetition count not provided\n"); return; }
         f64 am;
         if (!ryu_s2d_n((u8*)cmdE, chrs, &am)) { printf("Bad timing repetition count\n"); return; }
-        if (am==0) { printf("Timing repetition count was zero\n"); return; }
+        if (am==0) { printf("Timing repetition count cannot be zero\n"); return; }
         if (*repE == 's') { repE++; mode=3; timeNanos=am*1e9; }
+        else if (!q_fi64(&timeRep, am)) { if (am>1e18) goto largeRep; else printf("Timing repetition count must be an integer\n"); return; }
       #endif
       code = utf8Decode0(repE);
-      timeRep = am;
       output = 0;
     } else if (isCmd(cmdS, &cmdE, "mem ")) {
       if (strcmp(cmdE,"log")==0) {

@@ -23,5 +23,13 @@
 %USE repl ⋄ {𝕩/˜(𝕩=lf)∨⌽1≥↕≠𝕩}⌾(1⊸⊑) REPL ")t:0.01s 2+2" %% ⟨0,"s␊",⟨⟩⟩
 %USE repl ⋄ {𝕩/˜(𝕩=lf)∨⌽1≥↕≠𝕩}⌾(1⊸⊑) REPL ")time:0.01s 2+2" %% ⟨0,"s␊",⟨⟩⟩
 %USE repl ⋄ {𝕩/˜(𝕩=lf)∨⌽1≥↕≠𝕩}⌾(1⊸⊑) REPL ")t:100 2+2" %% ⟨0,"s␊",⟨⟩⟩
+%USE repl ⋄ {𝕩/˜(𝕩=lf)∨⌽1≥↕≠𝕩}⌾(1⊸⊑) REPL ")t:1e2 2+2" %% ⟨0,"s␊",⟨⟩⟩
 %USE repl ⋄ {𝕩/˜(𝕩=lf)∨⌽1≥↕≠𝕩}⌾(1⊸⊑) REPL ")t !0" %% ⟨0,⟨⟩,"Error: Assertion error␊at !0␊   ^␊"⟩
 
+%USE repl ⋄ REPL ")t:!1" %% ⟨0,"Timing repetition count not provided␊",⟨⟩⟩
+%USE repl ⋄ REPL ")t:-1 2+2" %% ⟨0,"Timing repetition count not provided␊",⟨⟩⟩
+%USE repl ⋄ REPL ")t:0 2+2" %% ⟨0,"Timing repetition count cannot be zero␊",⟨⟩⟩
+%USE repl ⋄ REPL ")t:1.11e1 2+2" %% ⟨0,"Timing repetition count must be an integer␊",⟨⟩⟩
+%USE repl ⋄ REPL ")t:1e1e1 2+2" %% ⟨0,"Bad timing repetition count␊",⟨⟩⟩
+%USE repl ⋄ REPL ")t:9999999999999999999 2+2" %% ⟨0,"Timing repetition count too large␊",⟨⟩⟩
+%USE repl ⋄ REPL ")t:9999999999999999999999999999999999999999999 2+2" %% ⟨0,"Timing repetition count too large␊",⟨⟩⟩
