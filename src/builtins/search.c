@@ -20,8 +20,7 @@
 //     SHOULD apply vector binary search to characters (sort as ints)
 //   n⊸=¨p otherwise
 // ≤16-bit elements: lookup tables
-//   8-bit ∊ and ⊐: SSSE3 table
-//     SHOULD make 8-bit NEON table
+//   8-bit ∊ and ⊐: SSSE3 or NEON table
 //   SHOULD have branchy reverse 16-bit table search
 // 32- or 64-bit elements: hash tables
 //   Store hash in table and not element; Robin Hood ordering; resizing

@@ -2,18 +2,17 @@
 // In the notes 𝕨 might indicate 𝕩 for Indices too
 
 // Boolean 𝕨 (Where/Compress) general case based on result type width
-// Size 1: compress 64-bit units, possibly SIMD
-//   pext if BMI2 is present
-//   Pairwise combination, SIMD if AVX2
-//   SIMD shift-by-offset if there's CLMUL but no AVX2
-//     SHOULD use with polynomial multiply in NEON
+// Size 1: compress 64-bit units, packed in SIMD registers if possible
+//   Scalar pext if BMI2 is present
+//   Shift using power-of-two masks from xor and sum-scans
+//     May use PCLMUL, or NEON 8-bit polynomial multiply
+//   Switch to pairwise combination above 16 bits on AVX2 and 8 on NEON
 //   COULD return boolean result from Where
 // Size 8, 16, 32, 64: mostly table-based
 //   Where: direct table lookup, widening for 16 and 32 if available
 //   Compress: table lookup plus shuffle
 //     AVX2 permutevar8x32 for 32 and 64 if available
 //     Sparse method using table-based Where fills in if no shuffle
-//   SHOULD implement for NEON
 //   AVX-512: compress instruction, separate store not compressstore
 // Size 32, 64: 16-bit indices from where_block_u16
 // Other sizes: always used grouped code
@@ -93,6 +92,7 @@
   extern void (*const si_scan_pluswrap_u16)(uint16_t* v0,uint16_t* v1,uint64_t v2,uint16_t v3);
   extern void (*const si_scan_pluswrap_u32)(uint32_t* v0,uint32_t* v1,uint64_t v2,uint32_t v3);
   extern void (*const si_scan_max_i32)(int32_t* v0,int32_t* v1,uint64_t v2);
+  #define vmulq_p8u(A,B) (uint8x16_t)vmulq_p8((poly8x16_t)(A), (poly8x16_t)(B))
   #define SINGELI_FILE slash
   #include "../utils/includeSingeli.h"
   extern uint64_t* const si_spaced_masks;
