@@ -345,29 +345,28 @@ def pext_popc{x:T, m:T if hasarch{'AARCH64'} or hasarch{'AVX2'}} = {
   }
   def build{k if (hasarch{'AARCH64'} and k==8) or (hasarch{'AVX2'} and k==16)} = {
     def V = re_el{ty_u{k}, T}
-    vm := V~~m
+    {x, d} := each{~~{V,.}, build{1}}
     # Various methods to get shift masks
     def {xor_scan, bp, alt_p, nz} = if (hasarch{'AARCH64'}) {
       # Carry-less multiply
       def clmul8 = emit{V, 'vmulq_p8u', ...}  # Cover for vmulq_p8
       def xor_scan = clmul8{., hom_ones{V}}
-      tup{xor_scan, 3, '', popc{~vm}}
+      tup{xor_scan, 3, '', popc{d}}
     } else {
       # Lookup table for 4-bit number of zeros
       def I = re_el{u8, T}
       def s = 4 - fold{flat_table{+,...}, 4**iota{2}}
-      def nz4 = shuf{[16]u8, make{I, cycle{vcount{I}, s}}, .}
-      im := I**0x0f
+      sums := make{I, cycle{vcount{I}, s}}; im := I**0x0f
+      def nz4{v} = V~~shuf{[16]u8, sums, I~~v & im}
       # 2 shift-based xor scans (bottom-up), 2 sum-based masks (top-down)
       def xor_scan = fold{{x,s} => x^(x<<s), ., 1<<iota{4}}
       r4 := V**16w0x1
-      a4 := V~~nz4{(I~~m)&im} | (V~~nz4{I~~(m>>4)&im})<<4
+      a4 := nz4{m} | nz4{m>>4}<<4
       s4 := a4 * r4
       def alt_p{k} = { l := (s4>>k) & r4; (l<<4) - l }
-      nz := s4>>12 - (vm==V**0)<<4  # s4 overflows if all 16 bits are 0
+      nz := s4>>12 - (V~~m==V**0)<<4  # s4 overflows if all 16 bits are 0
       tup{xor_scan, 2, alt_p, nz}
     }
-    {x, d} := each{~~{V,.}, build{1}}
     @unroll (i to lb{k}) {
       p := if (i<bp) xor_scan{d}  # i-th bit of prefix sum of initial d
            else alt_p{i}          # Or a sum-based mask
