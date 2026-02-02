@@ -307,9 +307,9 @@ B internalTemp_c1(B t, B x) {
 
 #if TEST_UTILS
   #include "../utils/mut.h"
-  #if RANDOMIZE_HEURISTICS
-    extern u64 heuristic_seed;
-  #endif
+#endif
+#if RANDOMIZE_HEURISTICS
+  extern u64 heuristic_seed;
 #endif
 #if NATIVE_COMPILER
   extern B native_comp;
