@@ -95,27 +95,27 @@ All of the above will go through build.bqn. If that causes problems, `make o3-ma
 
 ## Requirements
 
+CBQN requires either gcc (≥ 9) or clang (≥ 10) as the C compiler (by default it attempts `clang` as things are primarily optimized for clang, but, if unavailable, it'll fall back to `cc`; override with `CC=your-cc`), and, optionally, libffi for `•FFI` and C++ (requires ≥C++11; defaults to `c++`, override with `CXX=your-c++`) for replxx.
 
-CBQN requires either gcc or clang as the C compiler (by default it attempts `clang` as things are primarily optimized for clang, but, if unavailable, it'll fall back to `cc`; override with `CC=your-cc`), and, optionally, libffi for `•FFI` and C++ (requires ≥C++11; defaults to `c++`, override with `CXX=your-c++`) for replxx.
-
-There aren't hard requirements for versions of any of those, but nevertheless here are some configurations that CBQN is tested on by dzaima:
+Though other configurations are expected to work (except 32-bit x86 without SSE2[^x87-miscompilation]), here are some that CBQN is tested on by dzaima:
 
 ```
 x86-64 (Linux):
-  gcc 9.5; gcc 14.2.0; clang 10.0.0; clang 21.0.0
+  gcc 9.5; gcc 14.2.0; clang 10.0.0; clang 21.0.0; clang 22 prerelease (++20260105081943+212527c00ba6-1~exp1~20260105082109.1379)
   libffi 3.4.6
-  cpu microarchitecture: Haswell
+  CPU microarchitecture: Haswell
   replxx: g++ 14.0.1; clang++ 21.0.0
-x86 (Linux):
-  clang 19.1.0; gcc≤14 results in miscompilation - https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58416
-  running on the above x86-64 system, compiled with CCFLAGS=-m32
-AArch64 ARMv8-A (within Termux: Android 8, Android 16):
-  May need `lf=-landroid-spawn` & `pkg install libandroid-spawn` on old Android versions
-  clang 21.1.5
+x86 with SSE2 (Linux; running on the above x86-64 system, compiled with `make target_from_cc=1 REPLXX=0 FFI=0 CCFLAGS='-m32 -msse2' usz=32`):
+  clang 21.0.0; gcc 14.2.0
+AArch64 ARMv8-A (within Termux, Android 16):
+  clang 21.1.8
   libffi 3.4.7
-  replxx: clang++ 21.1.5
+  replxx: clang++ 21.1.8
+  May need `lf=-landroid-spawn` & `pkg install libandroid-spawn` on old Android versions
 ```
-Additionally, CBQN is known to compile as-is on macOS. Windows builds can be made by cross-compilation ([Docker setup](https://github.com/vylsaz/cbqn-win-docker-build)).
+Additionally, CBQN is known to compile as-is on macOS. Windows builds can be made by cross-compilation (see [Docker setup](https://github.com/vylsaz/cbqn-win-docker-build)).
+
+[^x87-miscompilation]: On x86, without SSE2, only gcc≥15 is known to avoid miscompiling CBQN; older gcc (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58416), and all tested clang versions, result in immediate crashes in optimized builds. Even when not miscompiled, such builds may produce unexpected floating-point results due to its non-standard extended-precision format. Enabling SSE2 via `CCFLAGS='-msse2'` resolves these problems, though of course won't run on hardware without support for it (...which is over 25 years old)
 
 The build will attempt to use `pkg-config` to find libffi, `uname` to determine `target_arch` & `target_os` if not using `target_from_cc`, and `nproc` for parallel job count, with defaults if unavailable (`-lffi` for linking libffi (+ `-ldl` on non-BSD), `target_arch=generic`, `target_os=linux`, `j=4`; these can of course also be specified manually).
 
